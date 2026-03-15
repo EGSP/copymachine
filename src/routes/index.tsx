@@ -6,6 +6,11 @@ export const Route = createFileRoute("/")({ component: App })
 
 function App() {
 	const [sourcePath, setSourcePath] = useState("")
+	const [targetPath, setTargetPath] = useState("")
+
+	function startCopy(){
+		
+	}
 
 	return (
 		<main className="page-wrap px-4 pb-8 pt-14">
@@ -15,6 +20,11 @@ function App() {
 					label="Source Path"
 					value={sourcePath}
 					onChange={setSourcePath}
+				/>
+				<PathPicker
+					label="Target Path"
+					value={targetPath}
+					onChange={setTargetPath}
 				/>
 			</div>
 		</main>
