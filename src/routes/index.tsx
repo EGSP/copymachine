@@ -1,4 +1,6 @@
 import PathPicker from "#/components/PathPicker"
+import { Button } from "#/components/ui/button"
+import { startCopy } from "#/actions/copy/copy.functions"
 import { createFileRoute } from "@tanstack/react-router"
 import { useState } from "react"
 
@@ -8,8 +10,12 @@ function App() {
 	const [sourcePath, setSourcePath] = useState("")
 	const [targetPath, setTargetPath] = useState("")
 
-	function startCopy(){
-		
+	async function handleStartCopy() {
+		await (
+			startCopy as unknown as (args: {
+				data: { sourcePath: string; targetPath: string }
+			}) => Promise<void>
+		)({ data: { sourcePath, targetPath } })
 	}
 
 	return (
@@ -26,6 +32,7 @@ function App() {
 					value={targetPath}
 					onChange={setTargetPath}
 				/>
+				<Button variant={"default"} onClick={handleStartCopy}>Start copy</Button>
 			</div>
 		</main>
 	)

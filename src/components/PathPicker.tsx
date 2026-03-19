@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Folder } from "lucide-react"
-import { chooseFolder, chooseFile } from "#/server/pathPicker"
+import { chooseFolder, chooseFile } from "#/actions/pathPick/pathPick.functions"
 import { Button } from "./ui/button"
 
 export type PathPickerMode = "file" | "folder"
