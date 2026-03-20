@@ -2,6 +2,9 @@ import fsn from "node:fs";
 import fs from "fs/promises"
 import path from "path";
 import { pipeline } from "node:stream/promises"
+import { getFileMetaInfo } from "#/lib/files/files.server";
+import { getSizeAutoFromBytes } from "#/lib/files/files";
+import type { FileAutoSize, FileMetaInfo } from "#/lib/files/files";
 
 
 type PathType = 'directory' | 'file';
@@ -15,17 +18,22 @@ export async function copy(sourcePath: string, targetPath: string) {
     }
 
     const iterator = new FileIterator(sourcePath)
-    const files: string[] = [];
+    const files: FileMetaInfo[] = [];
     for await (const file of iterator) {
-        files.push(file)
+        const metaInfo = await getFileMetaInfo(file)
+        files.push(metaInfo)
     }
 
+    const size: FileAutoSize = getSizeAutoFromBytes(
+        files.reduce((acc, file) => acc + file.sizeBytes, 0))
+
+    console.log(`Copying ${files.length} files totaling ${size.value} ${size.unit}.`)
     const concurrentTasks = 3;
     const tasks = new Set<Promise<void>>();
     for (const file of files) {
-        const destination = mapItemPathToTarget(sourcePath, file, targetPath)
+        const destination = mapItemPathToTarget(sourcePath, file.path, targetPath)
         const copyTask =
-            copyFile(file, destination)
+            copyFile(file.path, destination)
                 .finally(() => tasks.delete(copyTask))
         tasks.add(copyTask)
         if (tasks.size >= concurrentTasks) {
