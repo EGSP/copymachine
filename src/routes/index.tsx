@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { getCopyAnalysis, startCopy } from "#/actions/copy/copy.functions";
 import PathPicker from "#/components/PathPicker";
 import { Button } from "#/components/ui/button";
+import { ensureBackgroundServer } from "#/actions/background.functions";
 
 export const Route = createFileRoute("/")({ component: App });
 
@@ -14,8 +15,21 @@ function App() {
 	const [targetPath, setTargetPath] = useState("");
 	const [analysisText, setAnalysisText] = useState("");
 	const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
+	const [hasServer, setHasServer] = useState(false);
 
 	useEffect(() => {
+
+		void ensureBackgroundServer()
+			.then((result: string) => {
+				console.log("Background server ensured", result);
+				setHasServer(true);
+
+			})
+			.catch((err) => {
+				setHasServer(false);
+				console.error((err as Error).message);
+			});
+
 		const savedSourcePath = localStorage.getItem(SOURCE_PATH_STORAGE_KEY);
 		const savedTargetPath = localStorage.getItem(TARGET_PATH_STORAGE_KEY);
 
@@ -86,6 +100,10 @@ function App() {
 				data: { sourcePath: string; targetPath: string };
 			}) => Promise<void>
 		)({ data: { sourcePath, targetPath } });
+	}
+
+	if(!hasServer) {
+		return <p>Background server is not running</p>
 	}
 
 	return (
