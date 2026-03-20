@@ -1,108 +1,142 @@
 import fsn from "node:fs";
-import fs from "fs/promises"
-import path from "path";
-import { pipeline } from "node:stream/promises"
-import { getFileMetaInfo } from "#/lib/files/files.server";
-import { getSizeAutoFromBytes } from "#/lib/files/files";
+import fs from "node:fs/promises";
+import path from "node:path";
+import { pipeline } from "node:stream/promises";
 import type { FileAutoSize, FileMetaInfo } from "#/lib/files/files";
+import { getSizeAutoFromBytes } from "#/lib/files/files";
+import { getFileMetaInfo } from "#/lib/files/files.server";
 
+type PathType = "directory" | "file";
+export type CopyAnalysis = {
+	filesCount: number;
+	totalSizeBytes: number;
+	totalSize: FileAutoSize;
+};
 
-type PathType = 'directory' | 'file';
+export async function analyzeCopy(
+	sourcePath: string,
+	targetPath: string,
+): Promise<CopyAnalysis> {
+	const files = await collectFilesToCopy(sourcePath, targetPath);
+	const totalSizeBytes = files.reduce((acc, file) => acc + file.sizeBytes, 0);
+
+	return {
+		filesCount: files.length,
+		totalSizeBytes,
+		totalSize: getSizeAutoFromBytes(totalSizeBytes),
+	};
+}
+
 export async function copy(sourcePath: string, targetPath: string) {
+	const files = await collectFilesToCopy(sourcePath, targetPath);
 
-    const sourceType = await resolveType(sourcePath)
-    const targetType = await resolveType(targetPath)
+	const size: FileAutoSize = getSizeAutoFromBytes(
+		files.reduce((acc, file) => acc + file.sizeBytes, 0),
+	);
 
-    if (sourceType !== 'directory' || targetType !== 'directory') {
-        throw new Error('Source and target must be directories')
-    }
+	console.log(
+		`Copying ${files.length} files totaling ${size.value} ${size.unit}.`,
+	);
+	const concurrentTasks = 3;
+	const tasks = new Set<Promise<void>>();
+	for (const file of files) {
+		const destination = mapItemPathToTarget(sourcePath, file.path, targetPath);
+		const copyTask = copyFile(file.path, destination).finally(() =>
+			tasks.delete(copyTask),
+		);
+		tasks.add(copyTask);
+		if (tasks.size >= concurrentTasks) {
+			await Promise.race(tasks);
+		}
+	}
+	await Promise.all(tasks);
 
-    const iterator = new FileIterator(sourcePath)
-    const files: FileMetaInfo[] = [];
-    for await (const file of iterator) {
-        const metaInfo = await getFileMetaInfo(file)
-        files.push(metaInfo)
-    }
+	console.log(`Copy completed for ${sourcePath} to ${targetPath}.`);
+	console.log(`Copied ${files.length} files.`);
+}
 
-    const size: FileAutoSize = getSizeAutoFromBytes(
-        files.reduce((acc, file) => acc + file.sizeBytes, 0))
+async function collectFilesToCopy(
+	sourcePath: string,
+	targetPath: string,
+): Promise<FileMetaInfo[]> {
+	const sourceType = await resolveType(sourcePath);
+	const targetType = await resolveType(targetPath);
 
-    console.log(`Copying ${files.length} files totaling ${size.value} ${size.unit}.`)
-    const concurrentTasks = 3;
-    const tasks = new Set<Promise<void>>();
-    for (const file of files) {
-        const destination = mapItemPathToTarget(sourcePath, file.path, targetPath)
-        const copyTask =
-            copyFile(file.path, destination)
-                .finally(() => tasks.delete(copyTask))
-        tasks.add(copyTask)
-        if (tasks.size >= concurrentTasks) {
-            await Promise.race(tasks)
-        }
-    }
-    await Promise.all(tasks)
+	if (sourceType !== "directory" || targetType !== "directory") {
+		throw new Error("Source and target must be directories");
+	}
 
-    console.log(`Copy completed for ${sourcePath} to ${targetPath}.`)
-    console.log(`Copied ${files.length} files.`)
+	const iterator = new FileIterator(sourcePath);
+	const files: FileMetaInfo[] = [];
+	for await (const file of iterator) {
+		const metaInfo = await getFileMetaInfo(file);
+		files.push(metaInfo);
+	}
+
+	return files;
 }
 
 async function copyFile(sourcePath: string, targetPath: string) {
-    await fs.mkdir(path.dirname(targetPath), { recursive: true });
-    await pipeline(
-        fsn.createReadStream(sourcePath),
-        fsn.createWriteStream(targetPath)
-    )
+	await fs.mkdir(path.dirname(targetPath), { recursive: true });
+	await pipeline(
+		fsn.createReadStream(sourcePath),
+		fsn.createWriteStream(targetPath),
+	);
 }
 
 export function mapItemPathToTarget(
-    initialPath: string,
-    itemPath: string,
-    targetDirectory: string,
+	initialPath: string,
+	itemPath: string,
+	targetDirectory: string,
 ): string {
-    const normalizedInitialPath = path.resolve(initialPath)
-    const normalizedItemPath = path.resolve(itemPath)
-    const relativeItemPath = path.relative(normalizedInitialPath, normalizedItemPath)
+	const normalizedInitialPath = path.resolve(initialPath);
+	const normalizedItemPath = path.resolve(itemPath);
+	const relativeItemPath = path.relative(
+		normalizedInitialPath,
+		normalizedItemPath,
+	);
 
-    if (
-        relativeItemPath === '' ||
-        relativeItemPath === '.' ||
-        relativeItemPath.startsWith('..') ||
-        path.isAbsolute(relativeItemPath)
-    ) {
-        throw new Error(`Item path "${itemPath}" does not include initial path "${initialPath}"`)
-    }
+	if (
+		relativeItemPath === "" ||
+		relativeItemPath === "." ||
+		relativeItemPath.startsWith("..") ||
+		path.isAbsolute(relativeItemPath)
+	) {
+		throw new Error(
+			`Item path "${itemPath}" does not include initial path "${initialPath}"`,
+		);
+	}
 
-    return path.join(targetDirectory, relativeItemPath)
+	return path.join(targetDirectory, relativeItemPath);
 }
 
 async function resolveType(path: string): Promise<PathType> {
-    const stats = await fs.stat(path)
-    return stats.isFile() ? 'file' : 'directory'
+	const stats = await fs.stat(path);
+	return stats.isFile() ? "file" : "directory";
 }
 
-
 class FileIterator {
-    rootDirectoryPath: string;
+	rootDirectoryPath: string;
 
-    constructor(rootDirectory: string) {
-        this.rootDirectoryPath = rootDirectory
-    }
+	constructor(rootDirectory: string) {
+		this.rootDirectoryPath = rootDirectory;
+	}
 
-    async *[Symbol.asyncIterator](): AsyncGenerator<string, void, undefined> {
-        const entries = await fs.readdir(this.rootDirectoryPath,
-            { withFileTypes: true }
-        )
-        const directories: string[] = [];
-        for (const entry of entries) {
-            if (entry.isFile()) {
-                yield path.join(this.rootDirectoryPath, entry.name)
-            } else if (entry.isDirectory()) {
-                directories.push(path.join(this.rootDirectoryPath, entry.name))
-            }
-        }
+	async *[Symbol.asyncIterator](): AsyncGenerator<string, void, undefined> {
+		const entries = await fs.readdir(this.rootDirectoryPath, {
+			withFileTypes: true,
+		});
+		const directories: string[] = [];
+		for (const entry of entries) {
+			if (entry.isFile()) {
+				yield path.join(this.rootDirectoryPath, entry.name);
+			} else if (entry.isDirectory()) {
+				directories.push(path.join(this.rootDirectoryPath, entry.name));
+			}
+		}
 
-        for (const directory of directories) {
-            yield* new FileIterator(directory)
-        }
-    }
+		for (const directory of directories) {
+			yield* new FileIterator(directory);
+		}
+	}
 }
