@@ -1,5 +1,7 @@
+import fsn from "node:fs";
 import fs from "fs/promises"
 import path from "path";
+import { pipeline } from "node:stream/promises"
 
 
 type PathType = 'directory' | 'file';
@@ -17,16 +19,52 @@ export async function copy(sourcePath: string, targetPath: string) {
     for await (const file of iterator) {
         files.push(file)
     }
-    const sortedFiles = files.sort((a, b) =>
-        a.localeCompare(b))
 
-    for (const file of sortedFiles) {
-        console.log(file);
+    const concurrentTasks = 3;
+    const tasks = new Set<Promise<void>>();
+    for (const file of files) {
+        const destination = mapItemPathToTarget(sourcePath, file, targetPath)
+        const copyTask =
+            copyFile(file, destination)
+                .finally(() => tasks.delete(copyTask))
+        tasks.add(copyTask)
+        if (tasks.size >= concurrentTasks) {
+            await Promise.race(tasks)
+        }
+    }
+    await Promise.all(tasks)
+
+    console.log(`Copy completed for ${sourcePath} to ${targetPath}.`)
+    console.log(`Copied ${files.length} files.`)
+}
+
+async function copyFile(sourcePath: string, targetPath: string) {
+    await fs.mkdir(path.dirname(targetPath), { recursive: true });
+    await pipeline(
+        fsn.createReadStream(sourcePath),
+        fsn.createWriteStream(targetPath)
+    )
+}
+
+export function mapItemPathToTarget(
+    initialPath: string,
+    itemPath: string,
+    targetDirectory: string,
+): string {
+    const normalizedInitialPath = path.resolve(initialPath)
+    const normalizedItemPath = path.resolve(itemPath)
+    const relativeItemPath = path.relative(normalizedInitialPath, normalizedItemPath)
+
+    if (
+        relativeItemPath === '' ||
+        relativeItemPath === '.' ||
+        relativeItemPath.startsWith('..') ||
+        path.isAbsolute(relativeItemPath)
+    ) {
+        throw new Error(`Item path "${itemPath}" does not include initial path "${initialPath}"`)
     }
 
-    throw new Error('Not implemented')
-    // const source = await fs.readFile(sourcePath)
-    // await fs.writeFile(targetPath, source)
+    return path.join(targetDirectory, relativeItemPath)
 }
 
 async function resolveType(path: string): Promise<PathType> {
