@@ -1,0 +1,40 @@
+{
+  "plans": [
+    {
+      "name": "Кукарача",
+      "source": {
+        "path": "C:\\Users\\DNS\\Desktop\\потеряхин",
+        "type": "directory"
+      },
+      "target": {
+        "path": "C:\\Users\\DNS\\Downloads",
+        "type": "directory"
+      },
+      "id": "29612c16-bfc1-4857-a88d-6c394d3b5a94"
+    },
+    {
+      "name": "Портикал",
+      "source": {
+        "path": "C:\\Users\\DNS\\Desktop\\потеряхин",
+        "type": "directory"
+      },
+      "target": {
+        "path": "C:\\Users\\DNS\\Downloads",
+        "type": "directory"
+      },
+      "id": "89bdcc55-7103-4909-a548-879b37e02c81"
+    },
+    {
+      "name": "Грузомес",
+      "source": {
+        "path": "C:\\Users\\DNS\\Desktop\\потеряхин",
+        "type": "directory"
+      },
+      "target": {
+        "path": "C:\\Users\\DNS\\Downloads",
+        "type": "directory"
+      },
+      "id": "781bf077-3cae-4b90-9705-cc48f8009744"
+    }
+  ]
+}

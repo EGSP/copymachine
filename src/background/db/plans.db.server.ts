@@ -1,5 +1,6 @@
 import path from "node:path";
 import { randomUUID } from "node:crypto";
+import { mkdir, writeFile } from "node:fs/promises";
 import { Low } from "lowdb";
 import { JSONFilePreset } from "lowdb/node";
 import type { Plan } from "#/background/plans/plans";
@@ -11,23 +12,11 @@ export type PlansDbData = {
 
 export class PlansDB {
 	private readonly dbFilePath: string;
-	private lowDb?: Promise<Low<PlansDbData>>;
-	private dbReady?: Promise<Low<PlansDbData>>;
+	private lowDb?: Low<PlansDbData>;
+	private initInFlight?: Promise<Low<PlansDbData>>;
 
 	constructor(dbName: string) {
 		this.dbFilePath = path.join(dbDirectory, `${dbName}.db.json`);
-	}
-
-	private get db() {
-		if (this.lowDb) {
-			return this.lowDb;
-		}
-
-		this.lowDb = JSONFilePreset<PlansDbData>(
-			this.dbFilePath,
-			{ plans: [] },
-		);
-		return this.lowDb;
 	}
 
 	private ensurePlanId(plan: Plan): Plan {
@@ -41,42 +30,54 @@ export class PlansDB {
 		};
 	}
 
-	private async ensureDbInitialized() {
-		if (this.dbReady) {
-			return this.dbReady;
+	async init() {
+		if (this.lowDb) {
+			return this.lowDb;
 		}
 
-		this.dbReady = (async () => {
-			const db = await this.db;
-			let hasChanges = false;
+		if (this.initInFlight) {
+			return this.initInFlight;
+		}
 
-			const plansWithId = db.data.plans.map((plan) => {
-				const nextPlan = this.ensurePlanId(plan);
-				if (nextPlan.id !== plan.id) {
-					hasChanges = true;
+		this.initInFlight = (async () => {
+			await mkdir(path.dirname(this.dbFilePath), { recursive: true });
+			// await writeFile(this.dbFilePath, "", { flag: "a" });
+
+			const db = await JSONFilePreset<PlansDbData>(
+				this.dbFilePath,
+				{ plans: [] },
+			);
+			await db.read();
+			await db.update((data) => {
+				for (let i = 0; i < data.plans.length; i += 1) {
+					data.plans[i] = this.ensurePlanId(data.plans[i]);
 				}
-				return nextPlan;
 			});
 
-			if (hasChanges) {
-				await db.update((data) => {
-					data.plans = plansWithId;
-				});
-			}
-
+			this.lowDb = db;
 			return db;
-		})();
+		})().finally(() => {
+			this.initInFlight = undefined;
+		});
 
-		return this.dbReady;
+		return this.initInFlight;
+	}
+
+	private async getDb() {
+		if (this.lowDb) {
+			return this.lowDb;
+		}
+
+		return this.init();
 	}
 
 	async get() {
-		const db = await this.ensureDbInitialized();
+		const db = await this.getDb();
 		return db.data.plans;
 	}
 
 	async create(plan: Plan) {
-		const db = await this.ensureDbInitialized();
+		const db = await this.getDb();
 		const planWithId = this.ensurePlanId(plan);
 		await db.update(({ plans }) => {
 			plans.push(planWithId);
@@ -84,7 +85,7 @@ export class PlansDB {
 	}
 
 	async update(plan: Plan) {
-		const db = await this.ensureDbInitialized();
+		const db = await this.getDb();
 		const planWithId = this.ensurePlanId(plan);
 		const planIndex = db.data.plans.findIndex((item) => item.id === planWithId.id);
 		if (planIndex === -1) {

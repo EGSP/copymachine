@@ -9,4 +9,5 @@ export const globalWithDB = globalThis as typeof globalThis & {
 
 export const plansDb = globalWithDB.plansDb ?? new PlansDB("plans");
 globalWithDB.plansDb = plansDb;
+void plansDb.init();
 
