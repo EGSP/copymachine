@@ -1,6 +1,6 @@
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir } from "node:fs/promises";
 import { Low } from "lowdb";
 import { JSONFilePreset } from "lowdb/node";
 import type { Plan } from "#/background/plans/plans";
@@ -41,7 +41,6 @@ export class PlansDB {
 
 		this.initInFlight = (async () => {
 			await mkdir(path.dirname(this.dbFilePath), { recursive: true });
-			// await writeFile(this.dbFilePath, "", { flag: "a" });
 
 			const db = await JSONFilePreset<PlansDbData>(
 				this.dbFilePath,
