@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react"
 import { Folder } from "lucide-react"
 import { chooseFolder, chooseFile } from "#/actions/pathPick/pathPick.functions"
-import { Button } from "./ui/button"
+import { Button } from "#/components/ui/button"
+import { Input } from "#/components/ui/input"
+import { cn } from "#/lib/utils"
 
 export type PathPickerMode = "file" | "folder"
 
@@ -25,6 +27,7 @@ export default function PathPicker({
 	className = "",
 }: PathPickerProps) {
 	const [inputValue, setInputValue] = useState(value)
+	const pickerLabel = mode === "folder" ? "Выбрать папку" : "Выбрать файл"
 
 	useEffect(() => {
 		setInputValue(value)
@@ -47,21 +50,28 @@ export default function PathPicker({
 	}
 
 	return (
-		<div className={`flex min-w-0 flex-col ${className}`.trim()}>
-			<label className="mb-1 block text-sm font-medium text-[var(--sea-ink)]">
+		<div className={cn("flex min-w-0 flex-col gap-1", className)}>
+			<label className="text-xs font-medium text-foreground">
 				{label}
 			</label>
 			<div className="flex min-w-0 items-stretch gap-2">
-				<input
+				<Input
 					type="text"
 					value={inputValue}
 					onChange={handleInputChange}
 					placeholder={placeholder}
 					disabled={disabled}
-					className="min-w-0 flex-1 border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--sea-ink)] placeholder:text-[var(--sea-ink-soft)] focus:border-[var(--lagoon-deep)] focus:outline-none focus:ring-1 focus:ring-[var(--lagoon-deep)] disabled:opacity-60"
+					className="min-w-0 flex-1"
 					aria-label={label}
 				/>
-				<Button variant="outline" size="icon" onClick={openPicker} disabled={disabled} aria-label={mode === "folder" ? "Выбрать папку" : "Выбрать файл"}>
+				<Button
+					variant="outline"
+					size="icon"
+					onClick={openPicker}
+					disabled={disabled}
+					aria-label={pickerLabel}
+					title={pickerLabel}
+				>
 					<Folder className="size-5" aria-hidden />
 				</Button>
 			</div>
