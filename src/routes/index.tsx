@@ -107,7 +107,7 @@ function App() {
 	}
 
 	return (
-		<main className="page-wrap px-4 pb-8 pt-14">
+		<main className="">
 			<p>Hello World</p>
 			<div className="flex flex-col gap-4">
 				<PathPicker

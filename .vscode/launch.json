@@ -5,7 +5,7 @@
       "name": "Full launch",
       "type": "node",
       "request": "launch",
-      "runtimeExecutable": "pnpm",
+      "runtimeExecutable": "node",
       "runtimeArgs": ["run", "dev"],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal"

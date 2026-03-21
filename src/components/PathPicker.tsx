@@ -58,7 +58,7 @@ export default function PathPicker({
 					onChange={handleInputChange}
 					placeholder={placeholder}
 					disabled={disabled}
-					className="min-w-0 flex-1 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--sea-ink)] placeholder:text-[var(--sea-ink-soft)] focus:border-[var(--lagoon-deep)] focus:outline-none focus:ring-1 focus:ring-[var(--lagoon-deep)] disabled:opacity-60"
+					className="min-w-0 flex-1 border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--sea-ink)] placeholder:text-[var(--sea-ink-soft)] focus:border-[var(--lagoon-deep)] focus:outline-none focus:ring-1 focus:ring-[var(--lagoon-deep)] disabled:opacity-60"
 					aria-label={label}
 				/>
 				<Button variant="outline" size="icon" onClick={openPicker} disabled={disabled} aria-label={mode === "folder" ? "Выбрать папку" : "Выбрать файл"}>
