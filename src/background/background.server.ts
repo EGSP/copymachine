@@ -1,3 +1,5 @@
+import type { Plan } from "./plans/plans"
+
 console.log("Server started")
 
 const globalWithServer = globalThis as typeof globalThis & {
@@ -9,6 +11,8 @@ export function getServer() {
 }
 
 export class BackgroundServer {
+
+    plans = new Set<Plan>()
     
     async ini() {
         if (globalWithServer.backgroundServer) {

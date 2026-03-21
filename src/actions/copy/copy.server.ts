@@ -3,10 +3,9 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { pipeline } from "node:stream/promises";
 import type { FileAutoSize, FileMetaInfo } from "#/lib/files/files";
-import { getSizeAutoFromBytes } from "#/lib/files/files";
-import { getFileMetaInfo } from "#/lib/files/files.server";
+import { getSizeAutoFromBytes, PathType } from "#/lib/files/files";
+import { FileIterator, getFileMetaInfo } from "#/lib/files/files.server";
 
-type PathType = "directory" | "file";
 export type CopyAnalysis = {
 	filesCount: number;
 	totalSizeBytes: number;
@@ -112,31 +111,7 @@ export function mapItemPathToTarget(
 
 async function resolveType(path: string): Promise<PathType> {
 	const stats = await fs.stat(path);
-	return stats.isFile() ? "file" : "directory";
+	return stats.isFile() ? PathType.FILE : PathType.DIRECTORY;
 }
 
-class FileIterator {
-	rootDirectoryPath: string;
 
-	constructor(rootDirectory: string) {
-		this.rootDirectoryPath = rootDirectory;
-	}
-
-	async *[Symbol.asyncIterator](): AsyncGenerator<string, void, undefined> {
-		const entries = await fs.readdir(this.rootDirectoryPath, {
-			withFileTypes: true,
-		});
-		const directories: string[] = [];
-		for (const entry of entries) {
-			if (entry.isFile()) {
-				yield path.join(this.rootDirectoryPath, entry.name);
-			} else if (entry.isDirectory()) {
-				directories.push(path.join(this.rootDirectoryPath, entry.name));
-			}
-		}
-
-		for (const directory of directories) {
-			yield* new FileIterator(directory);
-		}
-	}
-}

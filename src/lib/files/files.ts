@@ -78,3 +78,8 @@ export class FileMetaInfo {
     return roundToTwo(value)
   }
 }
+
+export enum PathType {
+	DIRECTORY = "directory",
+	FILE = "file"
+}
