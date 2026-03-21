@@ -82,4 +82,8 @@ export class FileMetaInfo {
 export enum PathType {
 	DIRECTORY = "directory",
 	FILE = "file"
-}
+}export type PathInfo = {
+    path: string;
+    type: PathType;
+};
+

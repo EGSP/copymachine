@@ -1,11 +1,9 @@
-import { PathType } from "#/lib/files/files";
-
-type PathInfo = {
-    path: string;
-    type: PathType
-}
+import type { PathInfo } from "#/lib/files/files";
 
 export type Plan = {
+    id: string;
+    name: string;
+
     source: PathInfo;
     target: PathInfo;
 }
