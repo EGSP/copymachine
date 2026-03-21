@@ -1,7 +1,7 @@
 import type { PathInfo } from "#/lib/files/files";
 
 export type Plan = {
-    id: string;
+    id?: string;
     name: string;
 
     source: PathInfo;

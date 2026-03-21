@@ -1,4 +1,5 @@
 import path from "node:path";
+import { randomUUID } from "node:crypto";
 import { Low } from "lowdb";
 import { JSONFilePreset } from "lowdb/node";
 import type { Plan } from "#/background/plans/plans";
@@ -11,6 +12,7 @@ export type PlansDbData = {
 export class PlansDB {
 	private readonly dbFilePath: string;
 	private lowDb?: Promise<Low<PlansDbData>>;
+	private dbReady?: Promise<Low<PlansDbData>>;
 
 	constructor(dbName: string) {
 		this.dbFilePath = path.join(dbDirectory, `${dbName}.db.json`);
@@ -28,27 +30,69 @@ export class PlansDB {
 		return this.lowDb;
 	}
 
+	private ensurePlanId(plan: Plan): Plan {
+		if (plan.id) {
+			return plan;
+		}
+
+		return {
+			...plan,
+			id: randomUUID(),
+		};
+	}
+
+	private async ensureDbInitialized() {
+		if (this.dbReady) {
+			return this.dbReady;
+		}
+
+		this.dbReady = (async () => {
+			const db = await this.db;
+			let hasChanges = false;
+
+			const plansWithId = db.data.plans.map((plan) => {
+				const nextPlan = this.ensurePlanId(plan);
+				if (nextPlan.id !== plan.id) {
+					hasChanges = true;
+				}
+				return nextPlan;
+			});
+
+			if (hasChanges) {
+				await db.update((data) => {
+					data.plans = plansWithId;
+				});
+			}
+
+			return db;
+		})();
+
+		return this.dbReady;
+	}
+
 	async get() {
-		const db = await this.db;
+		const db = await this.ensureDbInitialized();
 		return db.data.plans;
 	}
 
-	async save(plan: Plan) {
-		const db = await this.db;
+	async create(plan: Plan) {
+		const db = await this.ensureDbInitialized();
+		const planWithId = this.ensurePlanId(plan);
 		await db.update(({ plans }) => {
-			plans.push(plan);
+			plans.push(planWithId);
 		});
 	}
 
 	async update(plan: Plan) {
-		const db = await this.db;
-		const planIndex = db.data.plans.findIndex((item) => item.id === plan.id);
+		const db = await this.ensureDbInitialized();
+		const planWithId = this.ensurePlanId(plan);
+		const planIndex = db.data.plans.findIndex((item) => item.id === planWithId.id);
 		if (planIndex === -1) {
 			return;
 		}
 
 		await db.update((data) => {
-			data.plans[planIndex] = plan;
+			data.plans[planIndex] = planWithId;
 		});
 	}
 }
