@@ -7,7 +7,7 @@ import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import { ensureBackgroundServer } from "#/actions/background.functions";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "#/components/ui/resizable";
-import ListBox from "#/components/builblocks/Listbox";
+import ListBox from "#/components/builblocks/ListBox";
 import type { Plan } from "#/background/plans/plans";
 import { PathType } from "#/lib/files/files";
 
