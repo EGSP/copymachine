@@ -1,14 +1,19 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { ensureBackgroundServer } from "#/actions/background.functions";
 import { getCopyAnalysis, startCopy } from "#/actions/copy/copy.functions";
 import { createPlan, getPlans } from "#/actions/plans.functions";
+import type { Plan } from "#/background/plans/plans";
+import ListBox from "#/components/builblocks/ListBox";
 import PathPicker from "#/components/PathPicker";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
-import { ensureBackgroundServer } from "#/actions/background.functions";
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "#/components/ui/resizable";
-import ListBox from "#/components/builblocks/ListBox";
-import type { Plan } from "#/background/plans/plans";
+import {
+	ResizableHandle,
+	ResizablePanel,
+	ResizablePanelGroup,
+} from "#/components/ui/resizable";
 import { PathType } from "#/lib/files/files";
 
 export const Route = createFileRoute("/")({ component: App });
@@ -16,29 +21,35 @@ export const Route = createFileRoute("/")({ component: App });
 const SOURCE_PATH_STORAGE_KEY = "sourcePath";
 const TARGET_PATH_STORAGE_KEY = "targetPath";
 
+const plansQueryKey = ["plans"] as const;
+
+function copyAnalysisQueryKey(sourcePath: string, targetPath: string) {
+	return ["copyAnalysis", sourcePath, targetPath] as const;
+}
+
 function App() {
+	const queryClient = useQueryClient();
 	const [sourcePath, setSourcePath] = useState("");
 	const [targetPath, setTargetPath] = useState("");
-	const [analysisText, setAnalysisText] = useState("");
-	const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
-	const [hasServer, setHasServer] = useState(false);
-	const [plans, setPlans] = useState<Plan[]>([]);
 	const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
 	const [planName, setPlanName] = useState("");
 
+	const ensureServerMutation = useMutation({
+		mutationKey: ["ensureBackgroundServer"],
+		mutationFn: () => ensureBackgroundServer(),
+		onSuccess: (result) => {
+			console.log("Background server ensured", result);
+		},
+		onError: (err) => {
+			console.error(err instanceof Error ? err.message : err);
+		},
+	});
+
 	useEffect(() => {
+		void ensureServerMutation.mutate();
+	}, [ensureServerMutation.mutate]);
 
-		void ensureBackgroundServer()
-			.then((result: string) => {
-				console.log("Background server ensured", result);
-				setHasServer(true);
-
-			})
-			.catch((err) => {
-				setHasServer(false);
-				console.error((err as Error).message);
-			});
-
+	useEffect(() => {
 		const savedSourcePath = localStorage.getItem(SOURCE_PATH_STORAGE_KEY);
 		const savedTargetPath = localStorage.getItem(TARGET_PATH_STORAGE_KEY);
 
@@ -61,107 +72,68 @@ function App() {
 		localStorage.setItem(TARGET_PATH_STORAGE_KEY, targetPath);
 	}, [targetPath]);
 
-	useEffect(() => {
-		let cancelled = false;
+	const plansQuery = useQuery({
+		queryKey: plansQueryKey,
+		queryFn: () => getPlans(),
+		enabled: ensureServerMutation.isSuccess,
+	});
 
-		async function loadPlans() {
-			if (!hasServer) return;
+	const copyAnalysisQuery = useQuery({
+		queryKey: copyAnalysisQueryKey(sourcePath, targetPath),
+		queryFn: () => getCopyAnalysis({ data: { sourcePath, targetPath } }),
+		enabled:
+			ensureServerMutation.isSuccess &&
+			Boolean(sourcePath) &&
+			Boolean(targetPath),
+	});
 
-			try {
-				const result = await (getPlans as unknown as () => Promise<Plan[]>)();
-				if (cancelled) return;
-				setPlans(result);
-			} catch {
-				if (cancelled) return;
-				setPlans([]);
-			}
-		}
+	const startCopyMutation = useMutation({
+		mutationKey: ["startCopy"],
+		mutationFn: (paths: { sourcePath: string; targetPath: string }) =>
+			startCopy({ data: paths }),
+	});
 
-		void loadPlans();
+	const createPlanMutation = useMutation({
+		mutationKey: ["createPlan"],
+		mutationFn: (plan: Plan) => createPlan({ data: plan }),
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: plansQueryKey });
+			setPlanName("");
+		},
+	});
 
-		return () => {
-			cancelled = true;
-		};
-	}, [hasServer]);
-
-	useEffect(() => {
-		let cancelled = false;
-
-		async function loadAnalysis() {
-			if (!sourcePath || !targetPath) {
-				setAnalysisText("");
-				setIsAnalysisLoading(false);
-				return;
-			}
-
-			setIsAnalysisLoading(true);
-			try {
-				const result = await (
-					getCopyAnalysis as unknown as (args: {
-						data: { sourcePath: string; targetPath: string };
-					}) => Promise<{
-						filesCount: number;
-						totalSize: { value: number; unit: string };
-					}>
-				)({ data: { sourcePath, targetPath } });
-
-				if (cancelled) return;
-				setAnalysisText(
-					`Будет скопировано файлов: ${result.filesCount}, общий размер: ${result.totalSize.value} ${result.totalSize.unit}`,
-				);
-			} catch {
-				if (cancelled) return;
-				setAnalysisText("");
-			} finally {
-				if (!cancelled) {
-					setIsAnalysisLoading(false);
-				}
-			}
-		}
-
-		void loadAnalysis();
-
-		return () => {
-			cancelled = true;
-		};
-	}, [sourcePath, targetPath]);
-
-	async function handleStartCopy() {
-		await (
-			startCopy as unknown as (args: {
-				data: { sourcePath: string; targetPath: string };
-			}) => Promise<void>
-		)({ data: { sourcePath, targetPath } });
-	}
-
-	async function handleCreatePlan() {
+	function handleCreatePlan() {
 		const normalizedName = planName.trim();
 		if (!normalizedName || !sourcePath || !targetPath) {
 			return;
 		}
 
-		await (
-			createPlan as unknown as (args: {
-				data: Plan;
-			}) => Promise<void>
-		)({
-			data: {
-				name: normalizedName,
-				source: { path: sourcePath, type: PathType.DIRECTORY },
-				target: { path: targetPath, type: PathType.DIRECTORY },
-			},
+		createPlanMutation.mutate({
+			name: normalizedName,
+			source: { path: sourcePath, type: PathType.DIRECTORY },
+			target: { path: targetPath, type: PathType.DIRECTORY },
 		});
-
-		const refreshedPlans = await (getPlans as unknown as () => Promise<Plan[]>)();
-		setPlans(refreshedPlans);
-		setPlanName("");
 	}
 
+	const plans = plansQuery.data ?? [];
 	const selectedPlan = plans.find((plan) => plan.id === selectedPlanId);
-	const selectedPlanIndex = plans.findIndex((plan) => plan.id === selectedPlanId);
+	const selectedPlanIndex = plans.findIndex(
+		(plan) => plan.id === selectedPlanId,
+	);
 
-	if (!hasServer) {
-		return <p>Background server is not running</p>
+	const analysisText =
+		copyAnalysisQuery.data !== undefined
+			? `Будет скопировано файлов: ${copyAnalysisQuery.data.filesCount}, общий размер: ${copyAnalysisQuery.data.totalSize.value} ${copyAnalysisQuery.data.totalSize.unit}`
+			: "";
+
+	if (ensureServerMutation.isPending) {
+		return (
+			<p className="text-sm text-(--sea-ink-soft)">Запуск фонового сервера…</p>
+		);
+	}
+
+	if (ensureServerMutation.isError) {
+		return <p>Background server is not running</p>;
 	}
 
 	return (
@@ -178,7 +150,9 @@ function App() {
 							) : (
 								<ListBox
 									items={plans}
-									selectedIndex={selectedPlanIndex >= 0 ? selectedPlanIndex : null}
+									selectedIndex={
+										selectedPlanIndex >= 0 ? selectedPlanIndex : null
+									}
 									onSelect={(item) => setSelectedPlanId(item.id ?? null)}
 									ariaLabel="Список планов"
 									renderItem={({ item }) => item.name}
@@ -212,7 +186,11 @@ function App() {
 					value={targetPath}
 					onChange={setTargetPath}
 				/>
-				<Button variant={"default"} onClick={handleStartCopy}>
+				<Button
+					variant={"default"}
+					disabled={startCopyMutation.isPending}
+					onClick={() => startCopyMutation.mutate({ sourcePath, targetPath })}
+				>
 					Start copy
 				</Button>
 				<Input
@@ -225,7 +203,12 @@ function App() {
 				<Button
 					variant={"outline"}
 					onClick={handleCreatePlan}
-					disabled={!planName.trim() || !sourcePath || !targetPath}
+					disabled={
+						!planName.trim() ||
+						!sourcePath ||
+						!targetPath ||
+						createPlanMutation.isPending
+					}
 				>
 					Create test plan
 				</Button>
@@ -233,9 +216,13 @@ function App() {
 					<p className="text-sm text-(--sea-ink-soft)">
 						Чтобы увидеть анализ, выберите source и target.
 					</p>
-				) : isAnalysisLoading ? (
+				) : copyAnalysisQuery.isPending ? (
 					<p className="text-sm text-(--sea-ink-soft)">
 						Считаю анализ копирования...
+					</p>
+				) : copyAnalysisQuery.isError ? (
+					<p className="text-sm text-(--sea-ink-soft)">
+						Нет данных для анализа
 					</p>
 				) : (
 					<p className="text-sm text-(--sea-ink)">

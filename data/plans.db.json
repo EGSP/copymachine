@@ -35,6 +35,54 @@
         "type": "directory"
       },
       "id": "781bf077-3cae-4b90-9705-cc48f8009744"
+    },
+    {
+      "name": "Приколист",
+      "source": {
+        "path": "C:\\Users\\DNS\\Desktop\\потеряхин",
+        "type": "directory"
+      },
+      "target": {
+        "path": "C:\\Users\\DNS\\Downloads",
+        "type": "directory"
+      },
+      "id": "2fcc6769-51c8-41fa-a651-9f2b7d95f98e"
+    },
+    {
+      "name": "Приколист 3",
+      "source": {
+        "path": "C:\\Users\\DNS\\Desktop\\потеряхин",
+        "type": "directory"
+      },
+      "target": {
+        "path": "C:\\Users\\DNS\\Downloads",
+        "type": "directory"
+      },
+      "id": "3c777f54-6ccc-4c85-8f66-db6f180d5125"
+    },
+    {
+      "name": "Таката)))",
+      "source": {
+        "path": "C:\\Users\\DNS\\Desktop\\потеряхин",
+        "type": "directory"
+      },
+      "target": {
+        "path": "C:\\Users\\DNS\\Downloads",
+        "type": "directory"
+      },
+      "id": "07496ba2-68a5-4b2f-a3d7-60ee88ce09d9"
+    },
+    {
+      "name": "Трататататат",
+      "source": {
+        "path": "C:\\Users\\DNS\\Desktop\\потеряхин",
+        "type": "directory"
+      },
+      "target": {
+        "path": "C:\\Users\\DNS\\Downloads",
+        "type": "directory"
+      },
+      "id": "8ca52f70-3ac2-4405-863e-183be41d86bc"
     }
   ]
 }
