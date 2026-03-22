@@ -1,12 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { createPlan } from "#/actions/plans.functions";
 import type { Plan } from "#/background/plans/plans";
-import { plansQueryKey } from "#/components/leafs/PlansList";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import { PathType } from "#/lib/files/files";
-import { useServerFn } from "@tanstack/react-start";
+import { plansQueryKey } from "#/lib/plansQuery";
 
 type CreatePlanFormProps = {
 	sourcePath: string;

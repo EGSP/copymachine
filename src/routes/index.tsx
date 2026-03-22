@@ -4,9 +4,8 @@ import { useEffect, useState } from "react";
 import { ensureBackgroundServer } from "#/actions/background.functions";
 import { getCopyAnalysis, startCopy } from "#/actions/copy/copy.functions";
 import CreatePlanForm from "#/components/leafs/CreatePlanForm";
-import PlansList from "#/components/leafs/PlansList";
+import PlansFrame from "#/components/leafs/PlansFrame";
 import PathPicker from "#/components/PathPicker";
-import { Button } from "#/components/ui/button";
 
 export const Route = createFileRoute("/")({ component: App });
 
@@ -93,7 +92,7 @@ function App() {
 		<main className="">
 			<p>Hello World</p>
 			<div className="flex flex-col gap-4">
-				<PlansList plansQueryEnabled={ensureServerMutation.isSuccess} />
+				<PlansFrame plansQueryEnabled={ensureServerMutation.isSuccess} />
 
 				<PathPicker
 					label="Source Path"

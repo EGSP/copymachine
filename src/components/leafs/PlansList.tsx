@@ -1,21 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect } from "react";
 import { getPlans } from "#/actions/plans.functions";
+import type { Plan } from "#/background/plans/plans";
 import ListBox from "#/components/builblocks/ListBox";
-import {
-	ResizableHandle,
-	ResizablePanel,
-	ResizablePanelGroup,
-} from "#/components/ui/resizable";
-
-export const plansQueryKey = ["plans"] as const;
+import { plansQueryKey } from "#/lib/plansQuery";
+import { usePlansStore } from "#/stores/plansStore";
 
 type PlansListProps = {
 	plansQueryEnabled: boolean;
 };
 
 export default function PlansList({ plansQueryEnabled }: PlansListProps) {
-	const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+	const setPlan = usePlansStore((s) => s.setPlan);
+	const storePlan = usePlansStore((s) => s.plan);
+	const clearPlan = usePlansStore((s) => s.clearPlan);
 
 	const plansQuery = useQuery({
 		queryKey: plansQueryKey,
@@ -24,44 +22,37 @@ export default function PlansList({ plansQueryEnabled }: PlansListProps) {
 	});
 
 	const plans = plansQuery.data ?? [];
-	const selectedPlan = plans.find((plan) => plan.id === selectedPlanId);
-	const selectedPlanIndex = plans.findIndex(
-		(plan) => plan.id === selectedPlanId,
-	);
+	const selectedPlanIndex = plans.findIndex((p) => p.id === storePlan?.id);
+
+	useEffect(() => {
+		const data = plansQuery.data;
+		if (data === undefined) {
+			return;
+		}
+		const id = storePlan?.id;
+		if (!id) {
+			return;
+		}
+		const exists = data.some((p) => p.id === id);
+		if (!exists) {
+			clearPlan();
+		}
+	}, [plansQuery.data, storePlan?.id, clearPlan]);
 
 	return (
-		<ResizablePanelGroup orientation="horizontal">
-			<ResizablePanel defaultSize={"21%"}>
-				<div className="p-3">
-					{plans.length === 0 ? (
-						<p className="text-sm text-(--sea-ink-soft)">
-							Нет ни одного плана.
-						</p>
-					) : (
-						<ListBox
-							items={plans}
-							selectedIndex={selectedPlanIndex >= 0 ? selectedPlanIndex : null}
-							onSelect={(item) => setSelectedPlanId(item.id ?? null)}
-							ariaLabel="Список планов"
-							renderItem={({ item }) => item.name}
-						/>
-					)}
-				</div>
-			</ResizablePanel>
-			<ResizableHandle withHandle />
-			<ResizablePanel>
-				<div className="p-3">
-					{selectedPlan ? (
-						<p className="text-sm text-(--sea-ink)">
-							План: {selectedPlan.name}, ID: {selectedPlan.id ?? "нет id"}
-						</p>
-					) : (
-						<p className="text-sm text-(--sea-ink-soft)">
-							Выберите план, чтобы увидеть его название и ID.
-						</p>
-					)}
-				</div>
-			</ResizablePanel>
-		</ResizablePanelGroup>
+		<div className="p-3">
+			{plans.length === 0 ? (
+				<p className="text-sm text-(--sea-ink-soft)">Нет ни одного плана.</p>
+			) : (
+				<ListBox<Plan>
+					items={plans}
+					selectedIndex={selectedPlanIndex >= 0 ? selectedPlanIndex : null}
+					getItemKey={(item, index) => item.id ?? `row-${index}`}
+					onSelect={(item) => setPlan(item)}
+					ariaLabel="Список планов"
+					renderItem={({ item }) => item.name}
+				/>
+			)}
+		</div>
 	);
 }

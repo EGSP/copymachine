@@ -25,18 +25,6 @@
       "id": "07496ba2-68a5-4b2f-a3d7-60ee88ce09d9"
     },
     {
-      "name": "Трататататат",
-      "source": {
-        "path": "C:\\Users\\DNS\\Desktop\\потеряхин",
-        "type": "directory"
-      },
-      "target": {
-        "path": "C:\\Users\\DNS\\Downloads",
-        "type": "directory"
-      },
-      "id": "8ca52f70-3ac2-4405-863e-183be41d86bc"
-    },
-    {
       "name": "Кукарача тристан",
       "source": {
         "path": "C:\\Users\\DNS\\Desktop\\потеряхин",
@@ -73,18 +61,6 @@
       "id": "3c8f596c-73ca-40a6-b6b1-054a4cf79761"
     },
     {
-      "name": "12345",
-      "source": {
-        "path": "C:\\Users\\DNS\\Downloads\\Программы (установочники)",
-        "type": "directory"
-      },
-      "target": {
-        "path": "C:\\Users\\DNS\\Desktop\\потеряхин",
-        "type": "directory"
-      },
-      "id": "63989fdd-ee44-4898-839e-5f3b2f2f955e"
-    },
-    {
       "name": "55555555",
       "source": {
         "path": "C:\\Users\\DNS\\Downloads\\Программы (установочники)",
@@ -95,18 +71,6 @@
         "type": "directory"
       },
       "id": "032cc970-6122-4af9-8599-6c948c7c0a25"
-    },
-    {
-      "name": "78787887",
-      "source": {
-        "path": "C:\\Users\\DNS\\Downloads\\Программы (установочники)",
-        "type": "directory"
-      },
-      "target": {
-        "path": "C:\\Users\\DNS\\Desktop\\потеряхин",
-        "type": "directory"
-      },
-      "id": "0a426f4a-33ed-4aa3-a642-a0c130525563"
     },
     {
       "name": "676867867",

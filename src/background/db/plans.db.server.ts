@@ -1,10 +1,10 @@
-import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { mkdir } from "node:fs/promises";
-import { Low } from "lowdb";
+import path from "node:path";
+import type { Low } from "lowdb";
 import { JSONFilePreset } from "lowdb/node";
-import type { Plan } from "#/background/plans/plans";
 import { dbDirectory } from "#/background/db/db.server";
+import type { Plan } from "#/background/plans/plans";
 
 export type PlansDbData = {
 	plans: Plan[];
@@ -42,10 +42,9 @@ export class PlansDB {
 		this.initInFlight = (async () => {
 			await mkdir(path.dirname(this.dbFilePath), { recursive: true });
 
-			const db = await JSONFilePreset<PlansDbData>(
-				this.dbFilePath,
-				{ plans: [] },
-			);
+			const db = await JSONFilePreset<PlansDbData>(this.dbFilePath, {
+				plans: [],
+			});
 			await db.read();
 			await db.update((data) => {
 				for (let i = 0; i < data.plans.length; i += 1) {
@@ -93,6 +92,13 @@ export class PlansDB {
 
 		await db.update((data) => {
 			data.plans[planIndex] = planWithId;
+		});
+	}
+
+	async deleteById(id: string) {
+		const db = await this.getDb();
+		await db.update((data) => {
+			data.plans = data.plans.filter((item) => item.id !== id);
 		});
 	}
 }
