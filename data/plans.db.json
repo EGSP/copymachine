@@ -167,6 +167,18 @@
         "type": "directory"
       },
       "id": "9ee47219-7a63-4097-aff4-f7a98bf46bd8"
+    },
+    {
+      "name": "Приколистос",
+      "source": {
+        "path": "C:\\Users\\DNS\\Desktop\\потеряхин",
+        "type": "directory"
+      },
+      "target": {
+        "path": "C:\\Users\\DNS\\Contacts",
+        "type": "directory"
+      },
+      "id": "cd40e6d0-006f-4444-900e-d1b7e3422189"
     }
   ]
 }
