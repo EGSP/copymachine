@@ -13,54 +13,6 @@
       "id": "29612c16-bfc1-4857-a88d-6c394d3b5a94"
     },
     {
-      "name": "Портикал",
-      "source": {
-        "path": "C:\\Users\\DNS\\Desktop\\потеряхин",
-        "type": "directory"
-      },
-      "target": {
-        "path": "C:\\Users\\DNS\\Downloads",
-        "type": "directory"
-      },
-      "id": "89bdcc55-7103-4909-a548-879b37e02c81"
-    },
-    {
-      "name": "Грузомес",
-      "source": {
-        "path": "C:\\Users\\DNS\\Desktop\\потеряхин",
-        "type": "directory"
-      },
-      "target": {
-        "path": "C:\\Users\\DNS\\Downloads",
-        "type": "directory"
-      },
-      "id": "781bf077-3cae-4b90-9705-cc48f8009744"
-    },
-    {
-      "name": "Приколист",
-      "source": {
-        "path": "C:\\Users\\DNS\\Desktop\\потеряхин",
-        "type": "directory"
-      },
-      "target": {
-        "path": "C:\\Users\\DNS\\Downloads",
-        "type": "directory"
-      },
-      "id": "2fcc6769-51c8-41fa-a651-9f2b7d95f98e"
-    },
-    {
-      "name": "Приколист 3",
-      "source": {
-        "path": "C:\\Users\\DNS\\Desktop\\потеряхин",
-        "type": "directory"
-      },
-      "target": {
-        "path": "C:\\Users\\DNS\\Downloads",
-        "type": "directory"
-      },
-      "id": "3c777f54-6ccc-4c85-8f66-db6f180d5125"
-    },
-    {
       "name": "Таката)))",
       "source": {
         "path": "C:\\Users\\DNS\\Desktop\\потеряхин",
@@ -83,6 +35,138 @@
         "type": "directory"
       },
       "id": "8ca52f70-3ac2-4405-863e-183be41d86bc"
+    },
+    {
+      "name": "Кукарача тристан",
+      "source": {
+        "path": "C:\\Users\\DNS\\Desktop\\потеряхин",
+        "type": "directory"
+      },
+      "target": {
+        "path": "C:\\Users\\DNS\\Pictures\\AnyDesk",
+        "type": "directory"
+      },
+      "id": "346dfe52-90e1-4a55-9072-262a9e55555d"
+    },
+    {
+      "name": "potttt",
+      "source": {
+        "path": "C:\\Users\\DNS\\Desktop\\потеряхин",
+        "type": "directory"
+      },
+      "target": {
+        "path": "C:\\Users\\DNS\\Desktop",
+        "type": "directory"
+      },
+      "id": "5ad8eec3-ff1c-4ad5-afba-f995e23d5f02"
+    },
+    {
+      "name": "Karate",
+      "source": {
+        "path": "C:\\Users\\DNS\\Downloads\\Программы (установочники)",
+        "type": "directory"
+      },
+      "target": {
+        "path": "C:\\Users\\DNS\\Desktop\\потеряхин",
+        "type": "directory"
+      },
+      "id": "3c8f596c-73ca-40a6-b6b1-054a4cf79761"
+    },
+    {
+      "name": "12345",
+      "source": {
+        "path": "C:\\Users\\DNS\\Downloads\\Программы (установочники)",
+        "type": "directory"
+      },
+      "target": {
+        "path": "C:\\Users\\DNS\\Desktop\\потеряхин",
+        "type": "directory"
+      },
+      "id": "63989fdd-ee44-4898-839e-5f3b2f2f955e"
+    },
+    {
+      "name": "55555555",
+      "source": {
+        "path": "C:\\Users\\DNS\\Downloads\\Программы (установочники)",
+        "type": "directory"
+      },
+      "target": {
+        "path": "C:\\Users\\DNS\\Desktop\\потеряхин",
+        "type": "directory"
+      },
+      "id": "032cc970-6122-4af9-8599-6c948c7c0a25"
+    },
+    {
+      "name": "78787887",
+      "source": {
+        "path": "C:\\Users\\DNS\\Downloads\\Программы (установочники)",
+        "type": "directory"
+      },
+      "target": {
+        "path": "C:\\Users\\DNS\\Desktop\\потеряхин",
+        "type": "directory"
+      },
+      "id": "0a426f4a-33ed-4aa3-a642-a0c130525563"
+    },
+    {
+      "name": "676867867",
+      "source": {
+        "path": "C:\\Users\\DNS\\Downloads\\Программы (установочники)",
+        "type": "directory"
+      },
+      "target": {
+        "path": "C:\\Users\\DNS\\Desktop\\потеряхин",
+        "type": "directory"
+      },
+      "id": "eb2290ba-92b7-4a9f-87cd-d4729f3c7756"
+    },
+    {
+      "name": "888888",
+      "source": {
+        "path": "C:\\Users\\DNS\\Downloads\\Программы (установочники)",
+        "type": "directory"
+      },
+      "target": {
+        "path": "C:\\Users\\DNS\\Desktop\\потеряхин",
+        "type": "directory"
+      },
+      "id": "5dc90d61-f0ac-43d7-b291-54cc38813777"
+    },
+    {
+      "name": "8767867676767",
+      "source": {
+        "path": "C:\\Users\\DNS\\Downloads\\Программы (установочники)",
+        "type": "directory"
+      },
+      "target": {
+        "path": "C:\\Users\\DNS\\Desktop\\потеряхин",
+        "type": "directory"
+      },
+      "id": "de9962e0-3585-40e2-91af-872eab2a4453"
+    },
+    {
+      "name": "99342839423",
+      "source": {
+        "path": "C:\\Users\\DNS\\Desktop\\потеряхин",
+        "type": "directory"
+      },
+      "target": {
+        "path": "C:\\Users\\DNS\\Downloads\\Web",
+        "type": "directory"
+      },
+      "id": "9f4c9637-bed1-473e-aeb3-c367318b4cac"
+    },
+    {
+      "name": "Кирилллииисо",
+      "source": {
+        "path": "C:\\Users\\DNS\\Desktop\\потеряхин",
+        "type": "directory"
+      },
+      "target": {
+        "path": "C:\\Users\\DNS\\Contacts",
+        "type": "directory"
+      },
+      "id": "9ee47219-7a63-4097-aff4-f7a98bf46bd8"
     }
   ]
 }
