@@ -15,6 +15,7 @@ import {
 import { Button } from "#/components/ui/button";
 import { plansQueryKey } from "#/lib/plansQuery";
 import { usePlansStore } from "#/stores/plansStore";
+import ScheduleFrame from "./ScheduleFrame";
 
 export function PlanWindow() {
 	const plan = usePlansStore((s) => s.plan);
@@ -101,6 +102,7 @@ export function PlanWindow() {
 			<p className="text-sm text-(--sea-ink)">
 				План: {plan.name}, ID: {plan.id ?? "нет id"}
 			</p>
+			<ScheduleFrame plan={plan} />
 		</div>
 	);
 }
