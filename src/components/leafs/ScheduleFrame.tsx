@@ -1,32 +1,40 @@
-import { useEffect, useState } from "react";
-import type { Plan } from "#/background/plans/plans";
+import { useState } from "react";
+import type { Schedule } from "#/lib/scheduler/schedule";
 import TimePicker from "#/components/builblocks/TimePicker";
-import { Input } from "#/components/ui/input";
 
 type ScheduleFrameProps = {
-	plan: Plan;
+	schedule?: Schedule;
+	/** Вызывается при каждом изменении; родитель может писать в ref без setState */
+	onScheduleChange?: (schedule: Schedule) => void;
 };
 
-export default function ScheduleFrame({ plan }: ScheduleFrameProps) {
-	const defaultScheduleTime = "13:55";
-	const [selectedTime, setSelectedTime] = useState(defaultScheduleTime);
+const DEFAULT_TIME = "13:55";
 
-	useEffect(() => {
-		setSelectedTime(defaultScheduleTime);
-	}, [plan.id]);
+function timeFromSchedule(schedule: Schedule | undefined): string {
+	const t = schedule?.time;
+	if (t === undefined || t === "") {
+		return DEFAULT_TIME;
+	}
+	return typeof t === "string" ? t : t;
+}
+
+export default function ScheduleFrame({ schedule, onScheduleChange }: ScheduleFrameProps) {
+	const [selectedTime, setSelectedTime] = useState(() => timeFromSchedule(schedule));
+
+	const handleChange = (value: string) => {
+		setSelectedTime(value);
+		onScheduleChange?.({
+			...schedule,
+			time: value || undefined,
+		});
+	};
 
 	return (
 		<div className="mt-3 flex min-w-0 flex-col gap-2 border border-border p-2">
-			<p className="text-xs text-muted-foreground">Расписание плана: {plan.name}</p>
-			<Input
-				value={defaultScheduleTime}
-				readOnly
-				aria-label="Техническое дефолтное время"
-				className="w-28"
-			/>
+			<p className="text-xs text-muted-foreground">Расписание запуска</p>
 			<TimePicker
 				value={selectedTime}
-				onChange={setSelectedTime}
+				onChange={handleChange}
 				aria-label="Время запуска"
 				className="w-28"
 			/>

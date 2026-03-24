@@ -1,4 +1,5 @@
 import type { PathInfo } from "#/lib/files/files";
+import type { Schedule } from "#/lib/scheduler/schedule";
 
 export type Plan = {
     id?: string;
@@ -6,4 +7,6 @@ export type Plan = {
 
     source?: PathInfo;
     target?: PathInfo;
+    /** Расписание запуска плана */
+    schedule?: Schedule;
 };

@@ -1,8 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { deletePlan, updatePlan } from "#/actions/plans.functions";
 import type { Plan } from "#/background/plans/plans";
+import type { Schedule } from "#/lib/scheduler/schedule";
 import {
 	AlertDialog,
 	AlertDialogCancel,
@@ -24,12 +25,22 @@ export function PlanWindow() {
 	const updatePlanFn = useServerFn(updatePlan);
 	const deletePlanFn = useServerFn(deletePlan);
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+	/** Черновик расписания до сохранения; обновления из ScheduleFrame не вызывают ререндер окна */
+	const scheduleDraftRef = useRef<Schedule>({});
 
 	useEffect(() => {
 		if (!plan) {
 			setDeleteDialogOpen(false);
 		}
 	}, [plan]);
+
+	useEffect(() => {
+		if (!plan) {
+			return;
+		}
+		// Только смена плана; иначе несохранённый черновик затёр бы новым объектом plan из стора
+		scheduleDraftRef.current = plan.schedule ? { ...plan.schedule } : {};
+	}, [plan?.id]);
 
 	const updateMutation = useMutation({
 		mutationFn: (p: Plan) => updatePlanFn({ data: p }),
@@ -60,7 +71,12 @@ export function PlanWindow() {
 					variant="outline"
 					type="button"
 					disabled={!planId || updateMutation.isPending}
-					onClick={() => updateMutation.mutate(plan)}
+					onClick={() =>
+						updateMutation.mutate({
+							...plan,
+							schedule: scheduleDraftRef.current,
+						})
+					}
 				>
 					Сохранить
 				</Button>
@@ -102,7 +118,13 @@ export function PlanWindow() {
 			<p className="text-sm text-(--sea-ink)">
 				План: {plan.name}, ID: {plan.id ?? "нет id"}
 			</p>
-			<ScheduleFrame plan={plan} />
+			<ScheduleFrame
+				key={plan.id ?? "new-plan"}
+				schedule={plan.schedule}
+				onScheduleChange={(s) => {
+					scheduleDraftRef.current = s;
+				}}
+			/>
 		</div>
 	);
 }
