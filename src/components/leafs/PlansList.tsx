@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { getPlans } from "#/actions/plans.functions";
 import type { Plan } from "#/background/plans/plans";
 import ListBox from "#/components/builblocks/ListBox";
+import { useDirtyMarkStore } from "#/contexts/DirtyMarkContext";
 import { plansQueryKey } from "#/lib/plansQuery";
 import { usePlansStore } from "#/stores/plansStore";
 
@@ -14,6 +15,7 @@ export default function PlansList({ plansQueryEnabled }: PlansListProps) {
 	const setPlan = usePlansStore((s) => s.setPlan);
 	const storePlan = usePlansStore((s) => s.plan);
 	const clearPlan = usePlansStore((s) => s.clearPlan);
+	const setDirty = useDirtyMarkStore((s) => s.setDirty);
 
 	const plansQuery = useQuery({
 		queryKey: plansQueryKey,
@@ -38,6 +40,10 @@ export default function PlansList({ plansQueryEnabled }: PlansListProps) {
 			clearPlan();
 		}
 	}, [plansQuery.data, storePlan?.id, clearPlan]);
+
+	useEffect(() => {
+		setDirty(false);
+	}, [storePlan?.id, setDirty]);
 
 	return (
 		<div className="p-3">

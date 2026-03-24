@@ -13,7 +13,9 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "#/components/ui/alert-dialog";
+import DirtyMarkBadge from "#/components/builblocks/DirtyMarkBadge";
 import { Button } from "#/components/ui/button";
+import { useDirtyMarkStore } from "#/contexts/DirtyMarkContext";
 import { plansQueryKey } from "#/lib/plansQuery";
 import { usePlansStore } from "#/stores/plansStore";
 import ScheduleFrame from "./ScheduleFrame";
@@ -25,6 +27,7 @@ export function PlanWindow() {
 	const updatePlanFn = useServerFn(updatePlan);
 	const deletePlanFn = useServerFn(deletePlan);
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+	const setDirty = useDirtyMarkStore((s) => s.setDirty);
 	/** Черновик расписания до сохранения; обновления из ScheduleFrame не вызывают ререндер окна */
 	const scheduleDraftRef = useRef<Schedule>({});
 
@@ -45,6 +48,7 @@ export function PlanWindow() {
 	const updateMutation = useMutation({
 		mutationFn: (p: Plan) => updatePlanFn({ data: p }),
 		onSuccess: () => {
+			setDirty(false);
 			void queryClient.invalidateQueries({ queryKey: plansQueryKey });
 		},
 	});
@@ -66,7 +70,8 @@ export function PlanWindow() {
 
 	return (
 		<div className="p-3">
-			<div className="mb-3 flex flex-wrap gap-2">
+			<div className="mb-3 flex flex-wrap items-center gap-2">
+				<DirtyMarkBadge />
 				<Button
 					variant="outline"
 					type="button"
@@ -123,6 +128,7 @@ export function PlanWindow() {
 				schedule={plan.schedule}
 				onScheduleChange={(s) => {
 					scheduleDraftRef.current = s;
+					setDirty(true);
 				}}
 			/>
 		</div>
