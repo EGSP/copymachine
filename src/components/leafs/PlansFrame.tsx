@@ -5,6 +5,7 @@ import {
 	ResizablePanelGroup,
 } from "#/components/ui/resizable";
 import { DirtyMarkProvider } from "#/contexts/DirtyMarkContext";
+import { PlanSelectionGuardProvider } from "#/contexts/PlanSelectionGuardContext";
 import { usePlansStore } from "#/stores/plansStore";
 import { PlanWindow } from "./PlanWindow";
 
@@ -17,13 +18,17 @@ export default function PlansFrame({ plansQueryEnabled }: PlansFrameProps) {
 
 	return (
 		<DirtyMarkProvider>
-			<ResizablePanelGroup orientation="horizontal">
-				<ResizablePanel defaultSize={"21%"}>
-					<PlansList plansQueryEnabled={plansQueryEnabled} />
-				</ResizablePanel>
-				<ResizableHandle withHandle />
-				<ResizablePanel>{selectedPlan ? <PlanWindow /> : null}</ResizablePanel>
-			</ResizablePanelGroup>
+			<PlanSelectionGuardProvider>
+				<ResizablePanelGroup orientation="horizontal">
+					<ResizablePanel defaultSize={"21%"}>
+						<PlansList plansQueryEnabled={plansQueryEnabled} />
+					</ResizablePanel>
+					<ResizableHandle withHandle />
+					<ResizablePanel>
+						{selectedPlan ? <PlanWindow /> : null}
+					</ResizablePanel>
+				</ResizablePanelGroup>
+			</PlanSelectionGuardProvider>
 		</DirtyMarkProvider>
 	);
 }

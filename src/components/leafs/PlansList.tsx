@@ -4,6 +4,7 @@ import { getPlans } from "#/actions/plans.functions";
 import type { Plan } from "#/background/plans/plans";
 import ListBox from "#/components/builblocks/ListBox";
 import { useDirtyMarkStore } from "#/contexts/DirtyMarkContext";
+import { usePlanSelectionGuard } from "#/contexts/PlanSelectionGuardContext";
 import { plansQueryKey } from "#/lib/plansQuery";
 import { usePlansStore } from "#/stores/plansStore";
 
@@ -12,7 +13,7 @@ type PlansListProps = {
 };
 
 export default function PlansList({ plansQueryEnabled }: PlansListProps) {
-	const setPlan = usePlansStore((s) => s.setPlan);
+	const { trySelectPlan } = usePlanSelectionGuard();
 	const storePlan = usePlansStore((s) => s.plan);
 	const clearPlan = usePlansStore((s) => s.clearPlan);
 	const setDirty = useDirtyMarkStore((s) => s.setDirty);
@@ -54,7 +55,7 @@ export default function PlansList({ plansQueryEnabled }: PlansListProps) {
 					items={plans}
 					selectedIndex={selectedPlanIndex >= 0 ? selectedPlanIndex : null}
 					getItemKey={(item, index) => item.id ?? `row-${index}`}
-					onSelect={(item) => setPlan(item)}
+					onSelect={(item) => trySelectPlan(item)}
 					ariaLabel="Список планов"
 					renderItem={({ item }) => item.name}
 				/>

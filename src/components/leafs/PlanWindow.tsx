@@ -16,6 +16,7 @@ import {
 import DirtyMarkBadge from "#/components/builblocks/DirtyMarkBadge";
 import { Button } from "#/components/ui/button";
 import { useDirtyMarkStore } from "#/contexts/DirtyMarkContext";
+import { usePlanSelectionGuard } from "#/contexts/PlanSelectionGuardContext";
 import { plansQueryKey } from "#/lib/plansQuery";
 import { usePlansStore } from "#/stores/plansStore";
 import ScheduleFrame from "./ScheduleFrame";
@@ -28,6 +29,11 @@ export function PlanWindow() {
 	const deletePlanFn = useServerFn(deletePlan);
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const setDirty = useDirtyMarkStore((s) => s.setDirty);
+	const {
+		pendingTarget,
+		cancelPendingSelection,
+		proceedPendingSelection,
+	} = usePlanSelectionGuard();
 	/** Черновик расписания до сохранения; обновления из ScheduleFrame не вызывают ререндер окна */
 	const scheduleDraftRef = useRef<Schedule>({});
 
@@ -94,6 +100,30 @@ export function PlanWindow() {
 					Удалить
 				</Button>
 			</div>
+			<AlertDialog
+				open={pendingTarget !== null}
+				onOpenChange={(open) => {
+					if (!open) {
+						cancelPendingSelection();
+					}
+				}}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Несохранённые изменения</AlertDialogTitle>
+						<AlertDialogDescription>
+							Расписание плана «{plan.name ?? "без названия"}» изменено. Перейти
+							к плану «{pendingTarget?.name ?? "другой план"}» без сохранения?
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel type="button" variant={"default"}>Вернуться</AlertDialogCancel>
+						<Button type="button" variant={"destructive"} onClick={proceedPendingSelection}>
+							Продолжить
+						</Button>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 			<AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
