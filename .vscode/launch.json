@@ -11,7 +11,17 @@
       "console": "integratedTerminal"
     },
     {
-      "name": "Full launch (Debug)",
+      "name": "Backend (Debug)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["--inspect", "run", "--watch", "src/index.ts"],
+      "cwd": "${workspaceFolder}/packages/backend",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    },
+    {
+      "name": "Frontend (Debug)",
       "type": "node",
       "request": "launch",
       "runtimeExecutable": "node",
@@ -37,6 +47,17 @@
       "request": "launch",
       "url": "http://localhost:3000",
       "webRoot": "${workspaceFolder}/packages/frontend/src"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Full launch (Debug)",
+      "configurations": ["Backend (Debug)", "Frontend (Debug)"],
+      "stopAll": true,
+      "presentation": {
+        "group": "fullstack",
+        "order": 1
+      }
     }
   ]
 }

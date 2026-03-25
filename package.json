@@ -2,7 +2,9 @@
   "name": "copymachine-root",
   "private": true,
   "scripts": {
-    "dev": "npm --prefix packages/frontend run dev",
+    "dev": "concurrently -n backend,frontend -c blue,green \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "npm --prefix packages/frontend run dev",
+    "dev:backend": "npm --prefix packages/backend run dev",
     "build": "npm --prefix packages/frontend run build",
     "preview": "npm --prefix packages/frontend run preview",
     "test": "npm --prefix packages/frontend run test",
@@ -11,5 +13,8 @@
     "check": "npm --prefix packages/frontend run check",
     "start": "npm run dev",
     "frontend:install": "npm --prefix packages/frontend install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
   }
 }
