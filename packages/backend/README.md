@@ -12,4 +12,4 @@ To start the development server run:
 bun run dev
 ```
 
-Open http://localhost:3000/ with your browser to see the result.
+Параметры слушания — в `.env` (есть в репозитории); без файла сработают дефолты `PORT=3001`, `HOSTNAME=0.0.0.0`.

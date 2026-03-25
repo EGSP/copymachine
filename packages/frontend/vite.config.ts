@@ -2,23 +2,27 @@ import tailwindcss from "@tailwindcss/vite";
 import { devtools } from "@tanstack/devtools-vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
-const config = defineConfig({
-	plugins: [
-		devtools(),
-		tsconfigPaths({ projects: ["./tsconfig.json"] }),
-		tailwindcss(),
-		tanstackStart(),
-		viteReact(),
-	],
-	// lowdb пишет в data/*.db.json — без игнора Vite считает это изменением исходников и перезагружает браузер.
-	server: {
-		watch: {
-			ignored: ["**/data/**"],
-		},
-	},
-});
+export default defineConfig(({ mode }) => {
+	const env = loadEnv(mode, import.meta.dirname, "");
+	const port = Number.parseInt(env.VITE_DEV_SERVER_PORT ?? "3000", 10);
 
-export default config;
+	return {
+		plugins: [
+			devtools(),
+			tsconfigPaths({ projects: ["./tsconfig.json"] }),
+			tailwindcss(),
+			tanstackStart(),
+			viteReact(),
+		],
+		// lowdb пишет в data/*.db.json — без игнора Vite считает это изменением исходников и перезагружает браузер.
+		server: {
+			port,
+			watch: {
+				ignored: ["**/data/**"],
+			},
+		},
+	};
+});

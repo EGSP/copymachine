@@ -28,16 +28,14 @@
       "runtimeArgs": [
         "--inspect",
         "${workspaceFolder}/packages/frontend/node_modules/vite/bin/vite.js",
-        "dev",
-        "--port",
-        "3000"
+        "dev"
       ],
       "cwd": "${workspaceFolder}/packages/frontend",
       "console": "integratedTerminal",
       "serverReadyAction": {
         "action": "startDebugging",
         "name": "Chrome",
-        "pattern": "Local:.*http://localhost:3000"
+        "pattern": "Local:\\s+http://localhost:[0-9]+"
       },
       "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
     },
