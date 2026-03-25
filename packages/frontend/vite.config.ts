@@ -7,7 +7,7 @@ import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig(({ mode }) => {
 	const env = loadEnv(mode, import.meta.dirname, "");
-	const port = Number.parseInt(env.VITE_DEV_SERVER_PORT ?? "3000", 10);
+	const port = Number.parseInt(env.VITE_INTERNAL_BACKEND_PORT ?? "3000", 10);
 
 	return {
 		plugins: [
