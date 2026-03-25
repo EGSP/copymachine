@@ -7,15 +7,22 @@ export type PlanSchedule = {
 }
 
 export class PlanScheduler {
-    private readonly planSchedules: Map<string, PlanSchedule> = new Map();
+    /**
+     * Расписания планов.
+     * Используется только для запуска планов.
+     */
+    private readonly plansSchedules: Map<string, PlanSchedule> = new Map();
 
-    async SyncPlanSchedules() {
+    /**
+     * Синхронизирует расписания планов с базой данных
+     */
+    async syncPlansSchedules() {
         const plans = await plansDb.get();
         for (const plan of plans) {
             if(!plan.id || !plan.schedule) {
                 continue;
             }
-            this.planSchedules.set(plan.id, {
+            this.plansSchedules.set(plan.id, {
                 planId: plan.id,
                 schedule: plan.schedule,
             });
