@@ -1,0 +1,101 @@
+{
+	// Автоматическое открытие трёх терминалов при открытии папки рабочей области.
+	// Каждый запускает интерактивный PowerShell с -NoExit, вкладка не закрывается после «завершения» задачи.
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Авто: терминалы (корень, фронтенд, бэкенд)",
+			"icon": {
+				"id": "layout-panel-dock",
+				"color": "terminal.ansiBlue"
+			},
+			"dependsOn": ["Root", "Frontend", "Backend"],
+			"dependsOrder": "parallel",
+			"problemMatcher": [],
+			"runOptions": {
+				"runOn": "folderOpen"
+			}
+		},
+		{
+			"label": "Root",
+			"icon": {
+				"id": "root-folder",
+				"color": "terminal.ansiCyan"
+			},
+			"type": "shell",
+			"command": "powershell.exe",
+			"args": [
+				"-NoExit",
+				"-NoLogo",
+				"-Command",
+				"Set-Location -LiteralPath '${workspaceFolder}'; Write-Host 'Терминал: корень репозитория' -ForegroundColor Cyan"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"echo": false,
+				"reveal": "always",
+				"focus": false,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"close": false
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Frontend",
+			"icon": {
+				"id": "browser",
+				"color": "terminal.ansiGreen"
+			},
+			"type": "shell",
+			"command": "powershell.exe",
+			"args": [
+				"-NoExit",
+				"-NoLogo",
+				"-Command",
+				"Set-Location -LiteralPath '${workspaceFolder}/packages/frontend'; Write-Host 'Терминал: packages/frontend' -ForegroundColor Green"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}/packages/frontend"
+			},
+			"presentation": {
+				"echo": false,
+				"reveal": "always",
+				"focus": false,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"close": false
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Backend",
+			"icon": {
+				"id": "server",
+				"color": "terminal.ansiYellow"
+			},
+			"type": "shell",
+			"command": "powershell.exe",
+			"args": [
+				"-NoExit",
+				"-NoLogo",
+				"-Command",
+				"Set-Location -LiteralPath '${workspaceFolder}/packages/backend'; Write-Host 'Терминал: packages/backend' -ForegroundColor Yellow"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}/packages/backend"
+			},
+			"presentation": {
+				"echo": false,
+				"reveal": "always",
+				"focus": false,
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"close": false
+			},
+			"problemMatcher": []
+		}
+	]
+}

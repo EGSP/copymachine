@@ -1,4 +1,5 @@
 {
+  "task.allowAutomaticTasks": "on",
   "files.watcherExclude": {
     "**/routeTree.gen.ts": true
   },
