@@ -1,0 +1,15 @@
+{
+  "name": "copymachine-root",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix packages/frontend run dev",
+    "build": "npm --prefix packages/frontend run build",
+    "preview": "npm --prefix packages/frontend run preview",
+    "test": "npm --prefix packages/frontend run test",
+    "format": "npm --prefix packages/frontend run format",
+    "lint": "npm --prefix packages/frontend run lint",
+    "check": "npm --prefix packages/frontend run check",
+    "start": "npm run dev",
+    "frontend:install": "npm --prefix packages/frontend install"
+  }
+}

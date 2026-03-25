@@ -5,7 +5,7 @@
       "name": "Full launch",
       "type": "node",
       "request": "launch",
-      "runtimeExecutable": "node",
+      "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal"
@@ -17,12 +17,12 @@
       "runtimeExecutable": "node",
       "runtimeArgs": [
         "--inspect",
-        "${workspaceFolder}/node_modules/vite/bin/vite.js",
+        "${workspaceFolder}/packages/frontend/node_modules/vite/bin/vite.js",
         "dev",
         "--port",
         "3000"
       ],
-      "cwd": "${workspaceFolder}",
+      "cwd": "${workspaceFolder}/packages/frontend",
       "console": "integratedTerminal",
       "serverReadyAction": {
         "action": "startDebugging",
@@ -36,7 +36,7 @@
       "type": "chrome",
       "request": "launch",
       "url": "http://localhost:3000",
-      "webRoot": "${workspaceFolder}/src"
+      "webRoot": "${workspaceFolder}/packages/frontend/src"
     }
   ]
 }
