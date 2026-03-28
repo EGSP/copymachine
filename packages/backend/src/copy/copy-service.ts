@@ -4,7 +4,7 @@ import path from "node:path";
 import { pipeline } from "node:stream/promises";
 import type { CopyAnalysis } from "copymachine-shared";
 import { getSizeAutoFromBytes, PathType } from "copymachine-shared";
-import { FileIterator, getFileMetaInfo } from "../lib/files.server.js";
+import { FileIterator, getFileMetaInfo } from "../lib/fileIterator.js";
 import type { FileMetaInfo } from "../lib/file-meta.js";
 
 export async function analyzeCopy(
