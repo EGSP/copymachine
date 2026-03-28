@@ -1,15 +1,27 @@
-# Elysia with Bun runtime
+# Backend (Express, Node)
 
-## Getting Started
-To get started with this template, simply paste this command into your terminal:
+Сервер API на **Express**, запуск под **Node.js** (TypeScript через [tsx](https://github.com/privatenumber/tsx)).
+
+## Разработка
+
+Из корня монорепы:
+
 ```bash
-bun create elysia ./elysia-example
+npm run dev:backend
 ```
 
-## Development
-To start the development server run:
+Или из `packages/backend`:
+
 ```bash
-bun run dev
+npm run dev
 ```
 
-Параметры слушания — в `.env` (есть в репозитории); без файла сработают дефолты `PORT=3001`, `HOSTNAME=0.0.0.0`.
+Параметры слушания — в `.env` в каталоге `packages/backend` (подхватывает **dotenv** при старте; сам Node переменные из файла не читает). Без файла — дефолты `PORT=3001`, `HOSTNAME=0.0.0.0`.
+
+## Однократный запуск (без watch)
+
+```bash
+npm run start
+```
+
+Требуется Node **20.6+** (флаг `--import tsx` для отладки в VS Code) или достаточно любой поддерживаемой LTS для `tsx` из npm.

@@ -1,11 +1,11 @@
 import { Folder } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
-import { api, treatyData } from "#/lib/api";
+import { type PathPickMode, usePathPickMutation } from "#/lib/queries/pathPick";
 import { cn } from "#/lib/utils";
 
-export type PathPickerMode = "file" | "folder";
+export type PathPickerMode = PathPickMode;
 
 export type PathPickerProps = {
 	label: string;
@@ -26,23 +26,25 @@ export default function PathPicker({
 	disabled = false,
 	className = "",
 }: PathPickerProps) {
+	const fieldId = useId();
 	const [inputValue, setInputValue] = useState(value);
 	const pickerLabel = mode === "folder" ? "Выбрать папку" : "Выбрать файл";
+	const pickMutation = usePathPickMutation();
 
 	useEffect(() => {
 		setInputValue(value);
 	}, [value]);
 
-	const openPicker = async () => {
+	const openPicker = () => {
 		if (disabled) return;
-		const path =
-			mode === "folder"
-				? await treatyData(api.api["path-pick"].folder.post())
-				: await treatyData(api.api["path-pick"].file.post());
-		if (path != null && path !== "") {
-			setInputValue(path);
-			onChange(path);
-		}
+		pickMutation.mutate(mode, {
+			onSuccess: (path) => {
+				if (path != null && path !== "") {
+					setInputValue(path);
+					onChange(path);
+				}
+			},
+		});
 	};
 
 	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,9 +55,12 @@ export default function PathPicker({
 
 	return (
 		<div className={cn("flex min-w-0 flex-col gap-1", className)}>
-			<label className="text-xs font-medium text-foreground">{label}</label>
+			<label htmlFor={fieldId} className="text-xs font-medium text-foreground">
+				{label}
+			</label>
 			<div className="flex min-w-0 items-stretch gap-2">
 				<Input
+					id={fieldId}
 					type="text"
 					value={inputValue}
 					onChange={handleInputChange}
@@ -68,7 +73,7 @@ export default function PathPicker({
 					variant="outline"
 					size="icon"
 					onClick={openPicker}
-					disabled={disabled}
+					disabled={disabled || pickMutation.isPending}
 					aria-label={pickerLabel}
 					title={pickerLabel}
 				>

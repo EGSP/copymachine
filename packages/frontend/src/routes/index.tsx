@@ -1,29 +1,21 @@
-import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import CreatePlanForm from "#/components/leafs/CreatePlanForm";
 import PlansFrame from "#/components/leafs/PlansFrame";
 import PathPicker from "#/components/PathPicker";
-import { api, treatyData } from "#/lib/api";
+import { useBackendHealthQuery } from "#/lib/queries/backend";
+import { useCopyAnalysisQuery } from "#/lib/queries/copy";
 
 export const Route = createFileRoute("/")({ component: App });
 
 const SOURCE_PATH_STORAGE_KEY = "sourcePath";
 const TARGET_PATH_STORAGE_KEY = "targetPath";
 
-function copyAnalysisQueryKey(sourcePath: string, targetPath: string) {
-	return ["copyAnalysis", sourcePath, targetPath] as const;
-}
-
 function App() {
 	const [sourcePath, setSourcePath] = useState("");
 	const [targetPath, setTargetPath] = useState("");
 
-	const healthQuery = useQuery({
-		queryKey: ["backendHealth"],
-		queryFn: () => treatyData(api.api.health.get()),
-		retry: 2,
-	});
+	const healthQuery = useBackendHealthQuery({ retry: 2 });
 
 	useEffect(() => {
 		const savedSourcePath = localStorage.getItem(SOURCE_PATH_STORAGE_KEY);
@@ -48,19 +40,11 @@ function App() {
 		localStorage.setItem(TARGET_PATH_STORAGE_KEY, targetPath);
 	}, [targetPath]);
 
-	const copyAnalysisQuery = useQuery({
-		queryKey: copyAnalysisQueryKey(sourcePath, targetPath),
-		queryFn: () =>
-			treatyData(
-				api.api.copy.analysis.post({
-					sourcePath,
-					targetPath,
-				}),
-			),
+	const copyAnalysisQuery = useCopyAnalysisQuery({
+		sourcePath,
+		targetPath,
 		enabled:
-			healthQuery.isSuccess &&
-			Boolean(sourcePath) &&
-			Boolean(targetPath),
+			healthQuery.isSuccess && Boolean(sourcePath) && Boolean(targetPath),
 	});
 
 	const analysisText =
@@ -80,7 +64,7 @@ function App() {
 
 	return (
 		<main className="">
-			<p>Hello World</p>
+			<p>Copy Machine</p>
 			<div className="flex flex-col gap-4">
 				<PlansFrame plansQueryEnabled={healthQuery.isSuccess} />
 

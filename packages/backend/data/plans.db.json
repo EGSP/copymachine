@@ -25,7 +25,25 @@
         "path": "C:\\Users\\DNS\\Contacts",
         "type": "directory"
       },
-      "id": "9ee47219-7a63-4097-aff4-f7a98bf46bd8"
+      "id": "9ee47219-7a63-4097-aff4-f7a98bf46bd8",
+      "schedule": {
+        "time": "11:15"
+      }
+    },
+    {
+      "name": "Poterin",
+      "source": {
+        "path": "C:\\Users\\DNS\\Desktop\\потеряхин",
+        "type": "directory"
+      },
+      "target": {
+        "path": "C:\\Users\\DNS\\Downloads",
+        "type": "directory"
+      },
+      "id": "410e98f2-8603-47a8-b31a-95045eac2410",
+      "schedule": {
+        "time": "20:15"
+      }
     }
   ]
 }

@@ -17,6 +17,7 @@ export class PlansDB {
 
 	constructor(dbName: string) {
 		this.dbFilePath = path.join(dbDirectory, `${dbName}.db.json`);
+		console.log(this.dbFilePath);
 	}
 
 	private ensurePlanId(plan: Plan): Plan {

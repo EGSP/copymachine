@@ -1,11 +1,9 @@
 import type { Plan } from "copymachine-shared";
 import { PathType } from "copymachine-shared";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
-import { api, treatyData } from "#/lib/api";
-import { plansQueryKey } from "#/lib/plansQuery";
+import { useCreatePlanMutation } from "#/lib/queries/plans";
 
 type CreatePlanFormProps = {
 	sourcePath: string;
@@ -16,17 +14,9 @@ export default function CreatePlanForm({
 	sourcePath,
 	targetPath,
 }: CreatePlanFormProps) {
-	const queryClient = useQueryClient();
 	const [planName, setPlanName] = useState("");
 
-	const createPlanMutation = useMutation({
-		mutationKey: ["createPlan"],
-		mutationFn: (plan: Plan) => treatyData(api.api.plans.post(plan)),
-		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: plansQueryKey });
-			setPlanName("");
-		},
-	});
+	const createPlanMutation = useCreatePlanMutation();
 
 	function handleCreatePlan() {
 		const normalizedName = planName.trim();
@@ -34,10 +24,14 @@ export default function CreatePlanForm({
 			return;
 		}
 
-		createPlanMutation.mutate({
+		const plan: Plan = {
 			name: normalizedName,
 			source: { path: sourcePath, type: PathType.DIRECTORY },
 			target: { path: targetPath, type: PathType.DIRECTORY },
+		};
+
+		createPlanMutation.mutate(plan, {
+			onSuccess: () => setPlanName(""),
 		});
 	}
 

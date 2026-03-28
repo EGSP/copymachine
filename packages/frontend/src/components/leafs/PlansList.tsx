@@ -1,11 +1,9 @@
 import type { Plan } from "copymachine-shared";
-import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import ListBox from "#/components/builblocks/ListBox";
 import { useDirtyMarkStore } from "#/contexts/DirtyMarkContext";
 import { usePlanSelectionGuard } from "#/contexts/PlanSelectionGuardContext";
-import { api, treatyData } from "#/lib/api";
-import { plansQueryKey } from "#/lib/plansQuery";
+import { usePlansQuery } from "#/lib/queries/plans";
 import { usePlansStore } from "#/stores/plansStore";
 
 type PlansListProps = {
@@ -18,11 +16,7 @@ export default function PlansList({ plansQueryEnabled }: PlansListProps) {
 	const clearPlan = usePlansStore((s) => s.clearPlan);
 	const setDirty = useDirtyMarkStore((s) => s.setDirty);
 
-	const plansQuery = useQuery({
-		queryKey: plansQueryKey,
-		queryFn: () => treatyData(api.api.plans.get()),
-		enabled: plansQueryEnabled,
-	});
+	const plansQuery = usePlansQuery({ enabled: plansQueryEnabled });
 
 	const plans = plansQuery.data ?? [];
 	const selectedPlanIndex = plans.findIndex((p) => p.id === storePlan?.id);
@@ -42,6 +36,7 @@ export default function PlansList({ plansQueryEnabled }: PlansListProps) {
 		}
 	}, [plansQuery.data, storePlan?.id, clearPlan]);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: сбрасываем грязь при смене выбранного плана (по id)
 	useEffect(() => {
 		setDirty(false);
 	}, [storePlan?.id, setDirty]);

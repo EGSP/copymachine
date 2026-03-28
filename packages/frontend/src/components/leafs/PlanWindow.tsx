@@ -1,6 +1,6 @@
-import type { Plan, Schedule } from "copymachine-shared";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { Schedule } from "copymachine-shared";
 import { useEffect, useRef, useState } from "react";
+import DirtyMarkBadge from "#/components/builblocks/DirtyMarkBadge";
 import {
 	AlertDialog,
 	AlertDialogCancel,
@@ -10,26 +10,23 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "#/components/ui/alert-dialog";
-import DirtyMarkBadge from "#/components/builblocks/DirtyMarkBadge";
 import { Button } from "#/components/ui/button";
 import { useDirtyMarkStore } from "#/contexts/DirtyMarkContext";
 import { usePlanSelectionGuard } from "#/contexts/PlanSelectionGuardContext";
-import { api, treatyData } from "#/lib/api";
-import { plansQueryKey } from "#/lib/plansQuery";
+import {
+	useDeletePlanMutation,
+	useUpdatePlanMutation,
+} from "#/lib/queries/plans";
 import { usePlansStore } from "#/stores/plansStore";
 import ScheduleFrame from "./ScheduleFrame";
 
 export function PlanWindow() {
 	const plan = usePlansStore((s) => s.plan);
 	const clearPlan = usePlansStore((s) => s.clearPlan);
-	const queryClient = useQueryClient();
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const setDirty = useDirtyMarkStore((s) => s.setDirty);
-	const {
-		pendingTarget,
-		cancelPendingSelection,
-		proceedPendingSelection,
-	} = usePlanSelectionGuard();
+	const { pendingTarget, cancelPendingSelection, proceedPendingSelection } =
+		usePlanSelectionGuard();
 	/** Черновик расписания до сохранения; обновления из ScheduleFrame не вызывают ререндер окна */
 	const scheduleDraftRef = useRef<Schedule>({});
 
@@ -39,6 +36,7 @@ export function PlanWindow() {
 		}
 	}, [plan]);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: сброс черновика только при смене id плана, не при каждом обновлении объекта plan
 	useEffect(() => {
 		if (!plan) {
 			return;
@@ -47,22 +45,9 @@ export function PlanWindow() {
 		scheduleDraftRef.current = plan.schedule ? { ...plan.schedule } : {};
 	}, [plan?.id]);
 
-	const updateMutation = useMutation({
-		mutationFn: (p: Plan) => treatyData(api.api.plans.put(p)),
-		onSuccess: () => {
-			setDirty(false);
-			void queryClient.invalidateQueries({ queryKey: plansQueryKey });
-		},
-	});
+	const updateMutation = useUpdatePlanMutation();
 
-	const deleteMutation = useMutation({
-		mutationFn: (id: string) => treatyData(api.api.plans({ id }).delete()),
-		onSuccess: () => {
-			clearPlan();
-			void queryClient.invalidateQueries({ queryKey: plansQueryKey });
-			setDeleteDialogOpen(false);
-		},
-	});
+	const deleteMutation = useDeletePlanMutation();
 
 	if (!plan) {
 		return null;
@@ -79,10 +64,13 @@ export function PlanWindow() {
 					type="button"
 					disabled={!planId || updateMutation.isPending}
 					onClick={() =>
-						updateMutation.mutate({
-							...plan,
-							schedule: scheduleDraftRef.current,
-						})
+						updateMutation.mutate(
+							{
+								...plan,
+								schedule: scheduleDraftRef.current,
+							},
+							{ onSuccess: () => setDirty(false) },
+						)
 					}
 				>
 					Сохранить
@@ -143,7 +131,12 @@ export function PlanWindow() {
 							disabled={deleteMutation.isPending}
 							onClick={() => {
 								if (planId) {
-									deleteMutation.mutate(planId);
+									deleteMutation.mutate(planId, {
+										onSuccess: () => {
+											clearPlan();
+											setDeleteDialogOpen(false);
+										},
+									});
 								}
 							}}
 						>

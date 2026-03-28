@@ -1,47 +1,106 @@
-import { cors } from "@elysiajs/cors";
 import type { Plan, StartCopyData } from "copymachine-shared";
-import { Elysia } from "elysia";
+import express from "express";
 import { analyzeCopy, copy } from "./copy/copy-service.js";
 import { plansDb } from "./db/instance.js";
 import { openFile, openFolder } from "./path-pick/native.js";
+import cors from "cors";
 
-const defaultCorsOrigin =
-	process.env.CORS_ORIGIN ?? "http://localhost:3000";
+/** Оборачивает async-обработчик, чтобы ошибки попадали в error-middleware Express 4 */
+function asyncHandler(
+	fn: (
+		req: express.Request,
+		res: express.Response,
+		next: express.NextFunction,
+	) => Promise<void>,
+) {
+	return (req: express.Request, res: express.Response, next: express.NextFunction) => {
+		Promise.resolve(fn(req, res, next)).catch(next);
+	};
+}
 
-/** Собирает HTTP API для Eden и рантайма */
-export const app = new Elysia()
-	.use(
-		cors({
-			origin: defaultCorsOrigin,
-		}),
-	)
-	.group("/api", (api) =>
-		api
-			.get("/health", () => ({ ok: true as const }))
-			.get("/plans", async () => plansDb.get())
-			.post("/plans", async ({ body }) => {
-				await plansDb.create(body as Plan);
-				return { ok: true as const };
-			})
-			.put("/plans", async ({ body }) => {
-				await plansDb.update(body as Plan);
-				return { ok: true as const };
-			})
-			.delete("/plans/:id", async ({ params }) => {
-				await plansDb.deleteById(params.id);
-				return { ok: true as const };
-			})
-			.post("/copy/analysis", async ({ body }) => {
-				const { sourcePath, targetPath } = body as StartCopyData;
-				return analyzeCopy(sourcePath, targetPath);
-			})
-			.post("/copy/start", async ({ body }) => {
-				const { sourcePath, targetPath } = body as StartCopyData;
-				await copy(sourcePath, targetPath);
-				return { ok: true as const };
-			})
-			.post("/path-pick/folder", async () => openFolder())
-			.post("/path-pick/file", async () => openFile()),
-	);
+const router = express.Router();
 
-export type App = typeof app;
+router.get("/health", (_req, res) => {
+	res.json({ ok: true as const });
+});
+
+router.get(
+	"/plans",
+	asyncHandler(async (_req, res) => {
+		res.json(await plansDb.get());
+	}),
+);
+
+router.post(
+	"/plans",
+	asyncHandler(async (req, res) => {
+		await plansDb.create(req.body as Plan);
+		res.json({ ok: true as const });
+	}),
+);
+
+router.put(
+	"/plans",
+	asyncHandler(async (req, res) => {
+		await plansDb.update(req.body as Plan);
+		res.json({ ok: true as const });
+	}),
+);
+
+router.delete(
+	"/plans/:id",
+	asyncHandler(async (req, res) => {
+		await plansDb.deleteById(req.params.id);
+		res.json({ ok: true as const });
+	}),
+);
+
+router.post(
+	"/copy/analysis",
+	asyncHandler(async (req, res) => {
+		const { sourcePath, targetPath } = req.body as StartCopyData;
+		res.json(await analyzeCopy(sourcePath, targetPath));
+	}),
+);
+
+router.post(
+	"/copy/start",
+	asyncHandler(async (req, res) => {
+		const { sourcePath, targetPath } = req.body as StartCopyData;
+		await copy(sourcePath, targetPath);
+		res.json({ ok: true as const });
+	}),
+);
+
+router.post(
+	"/path-pick/folder",
+	asyncHandler(async (_req, res) => {
+		res.json(await openFolder());
+	}),
+);
+
+router.post(
+	"/path-pick/file",
+	asyncHandler(async (_req, res) => {
+		res.json(await openFile());
+	}),
+);
+
+export const app = express();
+app.use(cors());
+app.use(express.json());
+app.use("/api", router);
+
+app.use(
+	(
+		err: unknown,
+		_req: express.Request,
+		res: express.Response,
+		_next: express.NextFunction,
+	) => {
+		console.error(err);
+		const message =
+			err instanceof Error ? err.message : "Внутренняя ошибка сервера";
+		res.status(500).json({ error: message });
+	},
+);

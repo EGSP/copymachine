@@ -14,8 +14,8 @@
       "name": "Backend (Debug)",
       "type": "node",
       "request": "launch",
-      "runtimeExecutable": "bun",
-      "runtimeArgs": ["--inspect", "run", "--watch", "src/index.ts"],
+      "program": "${workspaceFolder}/packages/backend/src/index.ts",
+      "runtimeArgs": ["--import", "tsx"],
       "cwd": "${workspaceFolder}/packages/backend",
       "console": "integratedTerminal",
       "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
@@ -27,7 +27,7 @@
       "runtimeExecutable": "node",
       "runtimeArgs": [
         "--inspect",
-        "${workspaceFolder}/packages/frontend/node_modules/vite/bin/vite.js",
+        "${workspaceFolder}/node_modules/vite/bin/vite.js",
         "dev"
       ],
       "cwd": "${workspaceFolder}/packages/frontend",
