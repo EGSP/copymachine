@@ -1,11 +1,43 @@
 /**
- * Примитивный job/query-контроллер в духе TanStack Query для фоновых задач на бэкенде:
- * ключи, кеш, staleTime, дедупликация параллельных запусков, подписки, invalidate.
+ * Примитивный job-контроллер (кеш, дедупликация in-flight, подписки, invalidate) для фона на бэкенде.
+ *
+ * ## Что можно читать у джобы (`getJobState` / в колбэке подписки)
+ *
+ * - **status** — `"idle"` | `"pending"` | `"success"` | `"error"`
+ * - **data** — результат последнего успешного выполнения (`undefined`, пока не было успеха)
+ * - **error** — ошибка последнего неуспешного завершения
+ * - **dataUpdatedAt** — время успешного обновления данных (мс, `Date.now()`)
+ * - **isStale** — пересчитывается через **staleFn(ctx)** и флаг invalidate
+ * - **context** — тот же объект **ctx**, что и у `jobFn`: `context.meta` + ваши поля
+ *
+ * ## Поля **context.meta** (заполняет контроллер)
+ *
+ * - **startedAt** — начало текущего/последнего запуска
+ * - **endedAt** — конец последнего запуска (после success или error)
+ * - **error** — дублирует `state.error` после ошибки; сбрасывается при новом старте
+ * - **status** — копия `status` для удобства внутри `staleFn`
+ * - **dataUpdatedAt** — копия `dataUpdatedAt`
+ *
+ * На **ctx** (кроме замены объекта `meta`) можно вешать свои поля; они живут на экземпляре джобы в кеше.
  */
 
 export type JobKey = readonly unknown[];
 
 export type JobStatus = "idle" | "pending" | "success" | "error";
+
+/** Системные поля контекста; обновляются контроллером при смене состояния и жизненном цикле запуска. */
+export type JobMeta = {
+	startedAt: number | undefined;
+	endedAt: number | undefined;
+	error: Error | undefined;
+	status: JobStatus;
+	dataUpdatedAt: number | undefined;
+};
+
+/**
+ * Контекст одной джобы в кеше. `meta` — предопределённые поля; остальное — произвольный словарь.
+ */
+export type JobContext = { meta: JobMeta } & Record<string, unknown>;
 
 export type JobState<TData = unknown> = {
 	status: JobStatus;
@@ -15,11 +47,21 @@ export type JobState<TData = unknown> = {
 	isStale: boolean;
 };
 
-export type JobFetchOptions<TData> = {
-	queryKey: JobKey;
-	queryFn: () => Promise<TData>;
-	/** Время «свежести» в мс. По умолчанию 0 — сразу считается устаревшим. */
-	staleTime?: number;
+/** Снимок джобы для чтения: состояние + тот же `context`, что получает `jobFn`. */
+export type JobView<TData = unknown> = JobState<TData> & {
+	context: JobContext;
+};
+
+export type StaleFn = (ctx: JobContext) => boolean;
+
+export type JobRunOptions<TData> = {
+	jobKey: JobKey;
+	jobFn: (ctx: JobContext) => Promise<TData>;
+	/**
+	 * `true` — данные считаются устаревшими и нужен новый запуск (при успешном кеше).
+	 * Если не передать — после `success` джоба не устаревает сама, только через `invalidateJobs`.
+	 */
+	staleFn?: StaleFn;
 };
 
 export type JobControllerOptions = {
@@ -31,16 +73,34 @@ export type JobControllerOptions = {
 };
 
 type CacheEntry<TData = unknown> = {
-	queryKey: JobKey;
-	queryFn: () => Promise<TData>;
-	staleTime: number;
-	/** После invalidateQueries — считается stale, пока не придёт успешный fetch. */
+	jobKey: JobKey;
+	jobFn: (ctx: JobContext) => Promise<TData>;
+	staleFn: StaleFn;
 	invalidated: boolean;
+	ctx: JobContext;
 	state: JobState<TData>;
 	subscribers: Set<() => void>;
 	gcTimeout: ReturnType<typeof setTimeout> | undefined;
 	promise: Promise<TData> | undefined;
 };
+
+function emptyMeta(): JobMeta {
+	return {
+		startedAt: undefined,
+		endedAt: undefined,
+		error: undefined,
+		status: "idle",
+		dataUpdatedAt: undefined,
+	};
+}
+
+function createContext(): JobContext {
+	return { meta: emptyMeta() } as JobContext;
+}
+
+function defaultStaleFn(): StaleFn {
+	return () => false;
+}
 
 function keysEqual(a: JobKey, b: JobKey): boolean {
 	if (a.length !== b.length) return false;
@@ -52,10 +112,10 @@ function keysEqual(a: JobKey, b: JobKey): boolean {
 
 function findEntry<TData>(
 	map: Map<string, CacheEntry>,
-	queryKey: JobKey,
+	jobKey: JobKey,
 ): CacheEntry<TData> | undefined {
 	for (const entry of map.values()) {
-		if (keysEqual(entry.queryKey, queryKey)) {
+		if (keysEqual(entry.jobKey, jobKey)) {
 			return entry as CacheEntry<TData>;
 		}
 	}
@@ -74,15 +134,17 @@ function now(): number {
 	return Date.now();
 }
 
-function computeIsStale<TData>(
-	entry: Pick<CacheEntry<TData>, "staleTime" | "invalidated" | "state">,
-): boolean {
+function syncMetaFromState<TData>(entry: CacheEntry<TData>) {
+	const s = entry.state;
+	entry.ctx.meta.status = s.status;
+	entry.ctx.meta.error = s.error;
+	entry.ctx.meta.dataUpdatedAt = s.dataUpdatedAt;
+}
+
+function computeIsStale<TData>(entry: CacheEntry<TData>): boolean {
 	if (entry.invalidated) return true;
-	const { status, dataUpdatedAt: updated } = entry.state;
-	if (status !== "success") return true;
-	if (updated === undefined) return true;
-	if (entry.staleTime === Number.POSITIVE_INFINITY) return false;
-	return now() - updated > entry.staleTime;
+	if (entry.state.status !== "success") return true;
+	return entry.staleFn(entry.ctx);
 }
 
 export class JobController {
@@ -93,30 +155,43 @@ export class JobController {
 		this.defaultGcTime = options.defaultGcTime ?? 5 * 60 * 1000;
 	}
 
-	getQueryState<TData>(queryKey: JobKey): JobState<TData> {
-		const entry = findEntry<TData>(this.cache, queryKey);
+	getJobState<TData>(jobKey: JobKey): JobView<TData> {
+		const entry = findEntry<TData>(this.cache, jobKey);
 		if (!entry) {
+			const ctx = createContext();
 			return {
 				status: "idle",
 				data: undefined,
 				error: undefined,
 				dataUpdatedAt: undefined,
 				isStale: true,
+				context: ctx,
 			};
 		}
 		const isStale = computeIsStale(entry);
-		return { ...entry.state, isStale };
+		return { ...entry.state, isStale, context: entry.ctx };
 	}
 
-	subscribe(queryKey: JobKey, listener: () => void): () => void {
-		const entry = this.ensureEntry(queryKey, {
-			queryKey,
-			queryFn: async () => {
+	/**
+	 * Подписка на изменения джобы по ключу. При каждом обновлении состояния вызывается `listener`.
+	 * Пока есть подписчики, запись не удаляется GC. Возвращает функцию отписки.
+	 *
+	 * @example
+	 * const stop = jobs.subscribe(["sync"], () => {
+	 *   const v = jobs.getJobState(["sync"]);
+	 *   console.log(v.status, v.data, v.context.cursor);
+	 * });
+	 * // stop();
+	 */
+	subscribe(jobKey: JobKey, listener: () => void): () => void {
+		const entry = this.ensureEntry(jobKey, {
+			jobKey,
+			jobFn: async () => {
 				throw new Error(
-					"JobController: для этой подписки не задан queryFn — вызовите setQueryData или fetchQuery с queryFn",
+					"JobController: нет jobFn для этой джобы — сначала runJob или setJobData",
 				);
 			},
-			staleTime: 0,
+			staleFn: defaultStaleFn(),
 		});
 		entry.subscribers.add(listener);
 		this.cancelGc(entry);
@@ -150,37 +225,38 @@ export class JobController {
 		entry.gcTimeout = setTimeout(() => {
 			entry.gcTimeout = undefined;
 			if (entry.subscribers.size === 0) {
-				const id = hashKey(entry.queryKey);
+				const id = hashKey(entry.jobKey);
 				this.cache.delete(id);
 			}
 		}, this.defaultGcTime);
 	}
 
 	private ensureEntry<TData>(
-		queryKey: JobKey,
-		initial: Pick<CacheEntry<TData>, "queryKey" | "queryFn" | "staleTime">,
+		jobKey: JobKey,
+		initial: Pick<CacheEntry<TData>, "jobKey" | "jobFn" | "staleFn">,
 	): CacheEntry<TData> {
-		const id = hashKey(queryKey);
+		const id = hashKey(jobKey);
 		let entry = this.cache.get(id) as CacheEntry<TData> | undefined;
-		if (entry && keysEqual(entry.queryKey, queryKey)) {
-			entry.queryFn = initial.queryFn;
-			entry.staleTime = initial.staleTime;
+		if (entry && keysEqual(entry.jobKey, jobKey)) {
+			entry.jobFn = initial.jobFn;
+			entry.staleFn = initial.staleFn;
 			return entry;
 		}
 		if (entry) {
 			this.cache.delete(id);
 		}
-		const existing = findEntry<TData>(this.cache, queryKey);
+		const existing = findEntry<TData>(this.cache, jobKey);
 		if (existing) {
-			existing.queryFn = initial.queryFn;
-			existing.staleTime = initial.staleTime;
+			existing.jobFn = initial.jobFn;
+			existing.staleFn = initial.staleFn;
 			return existing;
 		}
 		entry = {
-			queryKey,
-			queryFn: initial.queryFn,
-			staleTime: initial.staleTime,
+			jobKey,
+			jobFn: initial.jobFn,
+			staleFn: initial.staleFn,
 			invalidated: false,
+			ctx: createContext(),
 			state: {
 				status: "idle",
 				data: undefined,
@@ -202,21 +278,22 @@ export class JobController {
 			...next,
 			isStale: computeIsStale({ ...entry, state: next }),
 		};
+		syncMetaFromState(entry);
 		this.notify(entry);
 	}
 
 	/**
-	 * Запускает queryFn, если данных нет или они stale (или force).
+	 * Запускает jobFn, если нет успешных данных или они stale (или `force`).
 	 * Параллельные вызовы с тем же ключом получают один и тот же Promise.
 	 */
-	async fetchQuery<TData>(
-		options: JobFetchOptions<TData> & { force?: boolean },
+	async runJob<TData>(
+		options: JobRunOptions<TData> & { force?: boolean },
 	): Promise<TData> {
-		const staleTime = options.staleTime ?? 0;
-		const entry = this.ensureEntry(options.queryKey, {
-			queryKey: options.queryKey,
-			queryFn: options.queryFn,
-			staleTime,
+		const staleFn = options.staleFn ?? defaultStaleFn();
+		const entry = this.ensureEntry(options.jobKey, {
+			jobKey: options.jobKey,
+			jobFn: options.jobFn,
+			staleFn,
 		});
 
 		const shouldRun =
@@ -233,10 +310,14 @@ export class JobController {
 		}
 
 		entry.promise = (async () => {
+			entry.ctx.meta.startedAt = now();
+			entry.ctx.meta.endedAt = undefined;
+			entry.ctx.meta.error = undefined;
 			this.patchState(entry, { status: "pending", error: undefined });
 			try {
-				const data = await entry.queryFn();
+				const data = await entry.jobFn(entry.ctx);
 				entry.invalidated = false;
+				entry.ctx.meta.endedAt = now();
 				this.patchState(entry, {
 					status: "success",
 					data,
@@ -246,6 +327,8 @@ export class JobController {
 				return data;
 			} catch (err) {
 				const error = err instanceof Error ? err : new Error(String(err));
+				entry.ctx.meta.endedAt = now();
+				entry.ctx.meta.error = error;
 				this.patchState(entry, {
 					status: "error",
 					error,
@@ -259,23 +342,26 @@ export class JobController {
 		return entry.promise;
 	}
 
-	async prefetchQuery<TData>(options: JobFetchOptions<TData>): Promise<void> {
+	async prefetchJob<TData>(options: JobRunOptions<TData>): Promise<void> {
 		try {
-			await this.fetchQuery(options);
+			await this.runJob(options);
 		} catch {
-			// prefetch не пробрасывает — состояние уже в cache
+			// состояние уже в кеше
 		}
 	}
 
-	setQueryData<TData>(queryKey: JobKey, data: TData): void {
-		const entry = findEntry<TData>(this.cache, queryKey);
+	setJobData<TData>(jobKey: JobKey, data: TData): void {
+		const entry = findEntry<TData>(this.cache, jobKey);
 		if (!entry) {
-			const id = hashKey(queryKey);
+			const id = hashKey(jobKey);
+			const ctx = createContext();
+			ctx.meta.endedAt = now();
 			const newEntry: CacheEntry<TData> = {
-				queryKey,
-				queryFn: async () => data,
-				staleTime: 0,
+				jobKey,
+				jobFn: async (_ctx) => data,
+				staleFn: defaultStaleFn(),
 				invalidated: false,
+				ctx,
 				state: {
 					status: "success",
 					data,
@@ -287,9 +373,12 @@ export class JobController {
 				gcTimeout: undefined,
 				promise: undefined,
 			};
+			syncMetaFromState(newEntry);
 			this.cache.set(id, newEntry);
 			return;
 		}
+		entry.ctx.meta.endedAt = now();
+		entry.invalidated = false;
 		this.patchState(entry, {
 			status: "success",
 			data,
@@ -299,35 +388,36 @@ export class JobController {
 	}
 
 	/**
-	 * Помечает совпадающие ключи как устаревшие. Если refetchActive — перезапускает fetch у записей с подписчиками.
+	 * Помечает джобы как устаревшие. При `refetchActive` перезапускает run у джоб с подписчиками.
 	 */
-	invalidateQueries(
+	invalidateJobs(
 		predicate: (key: JobKey) => boolean,
 		options: { refetchActive?: boolean } = {},
 	): void {
 		const refetchActive = options.refetchActive ?? false;
 		for (const entry of this.cache.values()) {
-			if (!predicate(entry.queryKey)) continue;
+			if (!predicate(entry.jobKey)) continue;
 			entry.invalidated = true;
 			entry.state = {
 				...entry.state,
 				isStale: computeIsStale(entry),
 			};
+			syncMetaFromState(entry);
 			this.notify(entry);
 			if (refetchActive && entry.subscribers.size > 0) {
-				void this.fetchQuery({
-					queryKey: entry.queryKey,
-					queryFn: entry.queryFn,
-					staleTime: entry.staleTime,
+				void this.runJob({
+					jobKey: entry.jobKey,
+					jobFn: entry.jobFn,
+					staleFn: entry.staleFn,
 					force: true,
 				});
 			}
 		}
 	}
 
-	removeQueries(predicate: (key: JobKey) => boolean): void {
+	removeJobs(predicate: (key: JobKey) => boolean): void {
 		for (const [id, entry] of [...this.cache.entries()]) {
-			if (predicate(entry.queryKey)) {
+			if (predicate(entry.jobKey)) {
 				this.cancelGc(entry);
 				this.cache.delete(id);
 			}
