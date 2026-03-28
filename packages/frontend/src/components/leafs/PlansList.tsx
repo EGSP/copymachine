@@ -1,10 +1,10 @@
+import type { Plan } from "copymachine-shared";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { getPlans } from "#/actions/plans.functions";
-import type { Plan } from "#/background/plans/plans";
 import ListBox from "#/components/builblocks/ListBox";
 import { useDirtyMarkStore } from "#/contexts/DirtyMarkContext";
 import { usePlanSelectionGuard } from "#/contexts/PlanSelectionGuardContext";
+import { api, treatyData } from "#/lib/api";
 import { plansQueryKey } from "#/lib/plansQuery";
 import { usePlansStore } from "#/stores/plansStore";
 
@@ -20,7 +20,7 @@ export default function PlansList({ plansQueryEnabled }: PlansListProps) {
 
 	const plansQuery = useQuery({
 		queryKey: plansQueryKey,
-		queryFn: () => getPlans(),
+		queryFn: () => treatyData(api.api.plans.get()),
 		enabled: plansQueryEnabled,
 	});
 

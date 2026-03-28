@@ -1,0 +1,31 @@
+{
+  "plans": [
+    {
+      "name": "Кукарача",
+      "source": {
+        "path": "C:\\Users\\DNS\\Desktop\\потеряхин",
+        "type": "directory"
+      },
+      "target": {
+        "path": "C:\\Users\\DNS\\Downloads",
+        "type": "directory"
+      },
+      "id": "29612c16-bfc1-4857-a88d-6c394d3b5a94",
+      "schedule": {
+        "time": "16:20"
+      }
+    },
+    {
+      "name": "Кирилллииисо",
+      "source": {
+        "path": "C:\\Users\\DNS\\Desktop\\потеряхин",
+        "type": "directory"
+      },
+      "target": {
+        "path": "C:\\Users\\DNS\\Contacts",
+        "type": "directory"
+      },
+      "id": "9ee47219-7a63-4097-aff4-f7a98bf46bd8"
+    }
+  ]
+}

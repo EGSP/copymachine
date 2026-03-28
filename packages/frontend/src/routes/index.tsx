@@ -1,11 +1,10 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ensureBackgroundServer } from "#/actions/background.functions";
-import { getCopyAnalysis, startCopy } from "#/actions/copy/copy.functions";
 import CreatePlanForm from "#/components/leafs/CreatePlanForm";
 import PlansFrame from "#/components/leafs/PlansFrame";
 import PathPicker from "#/components/PathPicker";
+import { api, treatyData } from "#/lib/api";
 
 export const Route = createFileRoute("/")({ component: App });
 
@@ -20,20 +19,11 @@ function App() {
 	const [sourcePath, setSourcePath] = useState("");
 	const [targetPath, setTargetPath] = useState("");
 
-	const ensureServerMutation = useMutation({
-		mutationKey: ["ensureBackgroundServer"],
-		mutationFn: () => ensureBackgroundServer(),
-		onSuccess: (result) => {
-			console.log("Background server ensured", result);
-		},
-		onError: (err) => {
-			console.error(err instanceof Error ? err.message : err);
-		},
+	const healthQuery = useQuery({
+		queryKey: ["backendHealth"],
+		queryFn: () => treatyData(api.api.health.get()),
+		retry: 2,
 	});
-
-	useEffect(() => {
-		void ensureServerMutation.mutate();
-	}, [ensureServerMutation.mutate]);
 
 	useEffect(() => {
 		const savedSourcePath = localStorage.getItem(SOURCE_PATH_STORAGE_KEY);
@@ -60,17 +50,17 @@ function App() {
 
 	const copyAnalysisQuery = useQuery({
 		queryKey: copyAnalysisQueryKey(sourcePath, targetPath),
-		queryFn: () => getCopyAnalysis({ data: { sourcePath, targetPath } }),
+		queryFn: () =>
+			treatyData(
+				api.api.copy.analysis.post({
+					sourcePath,
+					targetPath,
+				}),
+			),
 		enabled:
-			ensureServerMutation.isSuccess &&
+			healthQuery.isSuccess &&
 			Boolean(sourcePath) &&
 			Boolean(targetPath),
-	});
-
-	const startCopyMutation = useMutation({
-		mutationKey: ["startCopy"],
-		mutationFn: (paths: { sourcePath: string; targetPath: string }) =>
-			startCopy({ data: paths }),
 	});
 
 	const analysisText =
@@ -78,21 +68,21 @@ function App() {
 			? `Будет скопировано файлов: ${copyAnalysisQuery.data.filesCount}, общий размер: ${copyAnalysisQuery.data.totalSize.value} ${copyAnalysisQuery.data.totalSize.unit}`
 			: "";
 
-	if (ensureServerMutation.isPending) {
+	if (healthQuery.isPending) {
 		return (
-			<p className="text-sm text-(--sea-ink-soft)">Запуск фонового сервера…</p>
+			<p className="text-sm text-(--sea-ink-soft)">Подключение к бэкенду…</p>
 		);
 	}
 
-	if (ensureServerMutation.isError) {
-		return <p>Background server is not running</p>;
+	if (healthQuery.isError) {
+		return <p>Бэкенд недоступен (проверь URL и что сервер запущен).</p>;
 	}
 
 	return (
 		<main className="">
 			<p>Hello World</p>
 			<div className="flex flex-col gap-4">
-				<PlansFrame plansQueryEnabled={ensureServerMutation.isSuccess} />
+				<PlansFrame plansQueryEnabled={healthQuery.isSuccess} />
 
 				<PathPicker
 					label="Source Path"
@@ -104,13 +94,6 @@ function App() {
 					value={targetPath}
 					onChange={setTargetPath}
 				/>
-				{/* <Button
-					variant={"default"}
-					disabled={startCopyMutation.isPending}
-					onClick={() => startCopyMutation.mutate({ sourcePath, targetPath })}
-				>
-					Start copy
-				</Button> */}
 				<CreatePlanForm sourcePath={sourcePath} targetPath={targetPath} />
 				{!sourcePath || !targetPath ? (
 					<p className="text-sm text-(--sea-ink-soft)">

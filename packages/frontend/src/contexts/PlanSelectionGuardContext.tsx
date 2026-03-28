@@ -5,7 +5,7 @@ import {
 	useState,
 	type ReactNode,
 } from "react";
-import type { Plan } from "#/background/plans/plans";
+import type { Plan } from "copymachine-shared";
 import { useDirtyMarkStore } from "#/contexts/DirtyMarkContext";
 import { usePlansStore } from "#/stores/plansStore";
 

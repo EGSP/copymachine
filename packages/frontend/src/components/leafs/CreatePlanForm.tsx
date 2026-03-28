@@ -1,11 +1,10 @@
+import type { Plan } from "copymachine-shared";
+import { PathType } from "copymachine-shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { createPlan } from "#/actions/plans.functions";
-import type { Plan } from "#/background/plans/plans";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
-import { PathType } from "#/lib/files/files";
+import { api, treatyData } from "#/lib/api";
 import { plansQueryKey } from "#/lib/plansQuery";
 
 type CreatePlanFormProps = {
@@ -19,11 +18,10 @@ export default function CreatePlanForm({
 }: CreatePlanFormProps) {
 	const queryClient = useQueryClient();
 	const [planName, setPlanName] = useState("");
-	const createPlanFn = useServerFn(createPlan);
 
 	const createPlanMutation = useMutation({
 		mutationKey: ["createPlan"],
-		mutationFn: (plan: Plan) => createPlanFn({ data: plan }),
+		mutationFn: (plan: Plan) => treatyData(api.api.plans.post(plan)),
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: plansQueryKey });
 			setPlanName("");

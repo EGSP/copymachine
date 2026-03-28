@@ -2,15 +2,10 @@ import fsn from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { pipeline } from "node:stream/promises";
-import type { FileAutoSize, FileMetaInfo } from "#/lib/files/files";
-import { getSizeAutoFromBytes, PathType } from "#/lib/files/files";
-import { FileIterator, getFileMetaInfo } from "#/lib/files/files.server";
-
-export type CopyAnalysis = {
-	filesCount: number;
-	totalSizeBytes: number;
-	totalSize: FileAutoSize;
-};
+import type { CopyAnalysis } from "copymachine-shared";
+import { getSizeAutoFromBytes, PathType } from "copymachine-shared";
+import { FileIterator, getFileMetaInfo } from "../lib/files.server.js";
+import type { FileMetaInfo } from "../lib/file-meta.js";
 
 export async function analyzeCopy(
 	sourcePath: string,
@@ -29,13 +24,11 @@ export async function analyzeCopy(
 export async function copy(sourcePath: string, targetPath: string) {
 	const files = await collectFilesToCopy(sourcePath, targetPath);
 
-	const size: FileAutoSize = getSizeAutoFromBytes(
+	const size = getSizeAutoFromBytes(
 		files.reduce((acc, file) => acc + file.sizeBytes, 0),
 	);
 
-	console.log(
-		`Copying ${files.length} files totaling ${size.value} ${size.unit}.`,
-	);
+	console.log(`Copying ${files.length} files totaling ${size.value} ${size.unit}.`);
 	const concurrentTasks = 3;
 	const tasks = new Set<Promise<void>>();
 	for (const file of files) {
@@ -61,7 +54,7 @@ async function collectFilesToCopy(
 	const sourceType = await resolveType(sourcePath);
 	const targetType = await resolveType(targetPath);
 
-	if (sourceType !== "directory" || targetType !== "directory") {
+	if (sourceType !== PathType.DIRECTORY || targetType !== PathType.DIRECTORY) {
 		throw new Error("Source and target must be directories");
 	}
 
@@ -109,9 +102,7 @@ export function mapItemPathToTarget(
 	return path.join(targetDirectory, relativeItemPath);
 }
 
-async function resolveType(path: string): Promise<PathType> {
-	const stats = await fs.stat(path);
+async function resolveType(pathStr: string): Promise<PathType> {
+	const stats = await fs.stat(pathStr);
 	return stats.isFile() ? PathType.FILE : PathType.DIRECTORY;
 }
-
-

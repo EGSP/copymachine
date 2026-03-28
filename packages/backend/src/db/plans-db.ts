@@ -3,8 +3,8 @@ import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import type { Low } from "lowdb";
 import { JSONFilePreset } from "lowdb/node";
-import { dbDirectory } from "#/background/db/db.server";
-import type { Plan } from "#/background/plans/plans";
+import type { Plan } from "copymachine-shared";
+import { dbDirectory } from "./paths.js";
 
 export type PlansDbData = {
 	plans: Plan[];

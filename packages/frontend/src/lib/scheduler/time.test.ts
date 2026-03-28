@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 
-import { isTime, parseTime, type Time } from "./time";
+import { isTime, parseTime, type Time } from "copymachine-shared";
 
 describe("isTime", () => {
 	it.each([

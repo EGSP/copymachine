@@ -1,7 +1,7 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 
-import { isTime } from "#/lib/scheduler/time";
+import { isTime } from "copymachine-shared";
 import { Input } from "#/components/ui/input";
 import { cn } from "#/lib/utils";
 

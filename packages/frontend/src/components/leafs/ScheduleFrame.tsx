@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Schedule } from "#/lib/scheduler/schedule";
+import type { Schedule } from "copymachine-shared";
 import TimePicker from "#/components/builblocks/TimePicker";
 
 type ScheduleFrameProps = {

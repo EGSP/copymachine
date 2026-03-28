@@ -1,9 +1,6 @@
+import type { Plan, Schedule } from "copymachine-shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
-import { deletePlan, updatePlan } from "#/actions/plans.functions";
-import type { Plan } from "#/background/plans/plans";
-import type { Schedule } from "#/lib/scheduler/schedule";
 import {
 	AlertDialog,
 	AlertDialogCancel,
@@ -17,6 +14,7 @@ import DirtyMarkBadge from "#/components/builblocks/DirtyMarkBadge";
 import { Button } from "#/components/ui/button";
 import { useDirtyMarkStore } from "#/contexts/DirtyMarkContext";
 import { usePlanSelectionGuard } from "#/contexts/PlanSelectionGuardContext";
+import { api, treatyData } from "#/lib/api";
 import { plansQueryKey } from "#/lib/plansQuery";
 import { usePlansStore } from "#/stores/plansStore";
 import ScheduleFrame from "./ScheduleFrame";
@@ -25,8 +23,6 @@ export function PlanWindow() {
 	const plan = usePlansStore((s) => s.plan);
 	const clearPlan = usePlansStore((s) => s.clearPlan);
 	const queryClient = useQueryClient();
-	const updatePlanFn = useServerFn(updatePlan);
-	const deletePlanFn = useServerFn(deletePlan);
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const setDirty = useDirtyMarkStore((s) => s.setDirty);
 	const {
@@ -52,7 +48,7 @@ export function PlanWindow() {
 	}, [plan?.id]);
 
 	const updateMutation = useMutation({
-		mutationFn: (p: Plan) => updatePlanFn({ data: p }),
+		mutationFn: (p: Plan) => treatyData(api.api.plans.put(p)),
 		onSuccess: () => {
 			setDirty(false);
 			void queryClient.invalidateQueries({ queryKey: plansQueryKey });
@@ -60,7 +56,7 @@ export function PlanWindow() {
 	});
 
 	const deleteMutation = useMutation({
-		mutationFn: (id: string) => deletePlanFn({ data: { id } }),
+		mutationFn: (id: string) => treatyData(api.api.plans({ id }).delete()),
 		onSuccess: () => {
 			clearPlan();
 			void queryClient.invalidateQueries({ queryKey: plansQueryKey });
@@ -117,8 +113,14 @@ export function PlanWindow() {
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel type="button" variant={"default"}>Вернуться</AlertDialogCancel>
-						<Button type="button" variant={"destructive"} onClick={proceedPendingSelection}>
+						<AlertDialogCancel type="button" variant={"default"}>
+							Вернуться
+						</AlertDialogCancel>
+						<Button
+							type="button"
+							variant={"destructive"}
+							onClick={proceedPendingSelection}
+						>
 							Продолжить
 						</Button>
 					</AlertDialogFooter>

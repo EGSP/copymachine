@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Plan } from "#/background/plans/plans";
+import type { Plan } from "copymachine-shared";
 
 export type PlansStore = {
 	plan: Plan | null;

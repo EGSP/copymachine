@@ -17,12 +17,8 @@ export default defineConfig(({ mode }) => {
 			tanstackStart(),
 			viteReact(),
 		],
-		// lowdb пишет в data/*.db.json — без игнора Vite считает это изменением исходников и перезагружает браузер.
 		server: {
 			port,
-			watch: {
-				ignored: ["**/data/**"],
-			},
 		},
 	};
 });

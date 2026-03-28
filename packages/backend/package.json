@@ -1,15 +1,28 @@
 {
-  "name": "app",
-  "version": "1.0.50",
+  "name": "copymachine-backend",
+  "version": "0.0.50",
+  "private": true,
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "bun run --watch src/index.ts"
   },
+  "exports": {
+    ".": "./src/index.ts",
+    "./app": {
+      "types": "./src/app.ts",
+      "default": "./src/app.ts"
+    }
+  },
   "dependencies": {
-    "elysia": "latest"
+    "@elysiajs/cors": "latest",
+    "copymachine-shared": "file:../shared",
+    "elysia": "latest",
+    "lowdb": "^7.0.1",
+    "popups-file-dialog": "^1.7.7"
   },
   "devDependencies": {
+    "@types/bun": "latest",
     "bun-types": "latest"
-  },
-  "module": "src/index.js"
+  }
 }

@@ -17,6 +17,7 @@
     "start": "npm run dev"
   },
   "dependencies": {
+    "@elysiajs/eden": "latest",
     "@base-ui/react": "^1.3.0",
     "@fontsource-variable/jetbrains-mono": "^5.2.8",
     "@phosphor-icons/react": "^2.1.10",
@@ -30,10 +31,10 @@
     "@tanstack/router-plugin": "^1.132.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "copymachine-shared": "file:../shared",
+    "copymachine-backend": "file:../backend",
     "effect": "^3.21.0",
-    "lowdb": "^7.0.1",
     "lucide-react": "^1.6.0",
-    "popups-file-dialog": "^1.7.7",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-resizable-panels": "^4.7.4",
