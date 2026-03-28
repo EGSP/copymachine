@@ -1,24 +1,25 @@
 /**
  * Примитивный job-контроллер (кеш, дедупликация in-flight, подписки, invalidate) для фона на бэкенде.
  *
- * ## Что можно читать у джобы (`getJobState` / в колбэке подписки)
+ * ## Снимок джобы (`getJobState` / аргумент колбэка `subscribe`)
  *
- * - **status** — `"idle"` | `"pending"` | `"success"` | `"error"`
- * - **data** — результат последнего успешного выполнения (`undefined`, пока не было успеха)
- * - **error** — ошибка последнего неуспешного завершения
- * - **dataUpdatedAt** — время успешного обновления данных (мс, `Date.now()`)
- * - **isStale** — пересчитывается через **staleFn(ctx)** и флаг invalidate
- * - **context** — тот же объект **ctx**, что и у `jobFn`: `context.meta` + ваши поля
+ * Дискриминированный union по **`status`** — в `switch` TypeScript сужает типы:
+ *
+ * - **`idle`** — `context`, `isStale`
+ * - **`pending`** — `context`, `isStale`, опционально `data` / `dataUpdatedAt` с прошлого успеха
+ * - **`success`** — `context`, `isStale`, `data`, `dataUpdatedAt`
+ * - **`error`** — `context`, `isStale`, `error`, опционально `data` / `dataUpdatedAt` с прошлого успеха
  *
  * ## Поля **context.meta** (заполняет контроллер)
  *
- * - **startedAt** — начало текущего/последнего запуска
- * - **endedAt** — конец последнего запуска (после success или error)
- * - **error** — дублирует `state.error` после ошибки; сбрасывается при новом старте
- * - **status** — копия `status` для удобства внутри `staleFn`
- * - **dataUpdatedAt** — копия `dataUpdatedAt`
+ * - **startedAt**, **endedAt**, **error**, **status**, **dataUpdatedAt**
  *
- * На **ctx** (кроме замены объекта `meta`) можно вешать свои поля; они живут на экземпляре джобы в кеше.
+ * На **ctx** можно вешать свои поля; они живут на экземпляре джобы в кеше.
+ *
+ * ## Итерация по списку ключей
+ *
+ * Вынесите список `JobKey` наружу, один раз **`registerJob`** на ключ (jobFn + staleFn), затем в цикле
+ * **`tickJob(key)`** — джоба сама решит, нужен ли запуск (как `runJob` без передачи fn).
  */
 
 export type JobKey = readonly unknown[];
@@ -39,18 +40,45 @@ export type JobMeta = {
  */
 export type JobContext = { meta: JobMeta } & Record<string, unknown>;
 
-export type JobState<TData = unknown> = {
-	status: JobStatus;
-	data: TData | undefined;
-	error: Error | undefined;
-	dataUpdatedAt: number | undefined;
+export type JobViewIdle = {
+	status: "idle";
 	isStale: boolean;
-};
-
-/** Снимок джобы для чтения: состояние + тот же `context`, что получает `jobFn`. */
-export type JobView<TData = unknown> = JobState<TData> & {
 	context: JobContext;
 };
+
+export type JobViewPending<TData = unknown> = {
+	status: "pending";
+	isStale: boolean;
+	context: JobContext;
+	/** Последний успешный результат до текущего запуска, если был. */
+	data: TData | undefined;
+	dataUpdatedAt: number | undefined;
+};
+
+export type JobViewSuccess<TData = unknown> = {
+	status: "success";
+	isStale: boolean;
+	context: JobContext;
+	data: TData;
+	dataUpdatedAt: number;
+};
+
+export type JobViewError<TData = unknown> = {
+	status: "error";
+	isStale: boolean;
+	context: JobContext;
+	error: Error;
+	/** Последний успех до ошибки, если был. */
+	data: TData | undefined;
+	dataUpdatedAt: number | undefined;
+};
+
+/** Явный снимок для чтения и для подписчика: сужение по `status`. */
+export type JobView<TData = unknown> =
+	| JobViewIdle
+	| JobViewPending<TData>
+	| JobViewSuccess<TData>
+	| JobViewError<TData>;
 
 export type StaleFn = (ctx: JobContext) => boolean;
 
@@ -72,16 +100,35 @@ export type JobControllerOptions = {
 	defaultGcTime?: number;
 };
 
+export type TickJobResult<TData = unknown> =
+	| { kind: "not_registered" }
+	| { kind: "cached"; data: TData }
+	| { kind: "completed"; data: TData }
+	| { kind: "failed"; error: Error };
+
+type JobListener = (snapshot: JobView<unknown>) => void;
+
 type CacheEntry<TData = unknown> = {
 	jobKey: JobKey;
 	jobFn: (ctx: JobContext) => Promise<TData>;
 	staleFn: StaleFn;
+	/** Есть ли рабочее описание джобы (registerJob / runJob / setJobData); иначе tickJob не трогает. */
+	registered: boolean;
 	invalidated: boolean;
 	ctx: JobContext;
-	state: JobState<TData>;
-	subscribers: Set<() => void>;
+	state: JobStatePlain<TData>;
+	subscribers: Set<JobListener>;
 	gcTimeout: ReturnType<typeof setTimeout> | undefined;
 	promise: Promise<TData> | undefined;
+};
+
+/** Внутреннее плоское состояние (для patch); наружу отдаётся как JobView. */
+type JobStatePlain<TData = unknown> = {
+	status: JobStatus;
+	data: TData | undefined;
+	error: Error | undefined;
+	dataUpdatedAt: number | undefined;
+	isStale: boolean;
 };
 
 function emptyMeta(): JobMeta {
@@ -147,6 +194,43 @@ function computeIsStale<TData>(entry: CacheEntry<TData>): boolean {
 	return entry.staleFn(entry.ctx);
 }
 
+function toJobView<TData>(entry: CacheEntry<TData>): JobView<TData> {
+	const isStale = computeIsStale(entry);
+	const context = entry.ctx;
+	const s = entry.state;
+	switch (s.status) {
+		case "idle":
+			return { status: "idle", isStale, context };
+		case "pending":
+			return {
+				status: "pending",
+				isStale,
+				context,
+				data: s.data,
+				dataUpdatedAt: s.dataUpdatedAt,
+			};
+		case "success":
+			return {
+				status: "success",
+				isStale,
+				context,
+				data: s.data as TData,
+				dataUpdatedAt: s.dataUpdatedAt as number,
+			};
+		case "error": {
+			const err = s.error;
+			return {
+				status: "error",
+				isStale,
+				context,
+				error: err ?? new Error("unknown job error"),
+				data: s.data,
+				dataUpdatedAt: s.dataUpdatedAt,
+			};
+		}
+	}
+}
+
 export class JobController {
 	private readonly cache = new Map<string, CacheEntry>();
 	private readonly defaultGcTime: number;
@@ -158,53 +242,109 @@ export class JobController {
 	getJobState<TData>(jobKey: JobKey): JobView<TData> {
 		const entry = findEntry<TData>(this.cache, jobKey);
 		if (!entry) {
-			const ctx = createContext();
 			return {
 				status: "idle",
-				data: undefined,
-				error: undefined,
-				dataUpdatedAt: undefined,
 				isStale: true,
-				context: ctx,
+				context: createContext(),
 			};
 		}
-		const isStale = computeIsStale(entry);
-		return { ...entry.state, isStale, context: entry.ctx };
+		return toJobView(entry);
 	}
 
 	/**
-	 * Подписка на изменения джобы по ключу. При каждом обновлении состояния вызывается `listener`.
-	 * Пока есть подписчики, запись не удаляется GC. Возвращает функцию отписки.
-	 *
-	 * @example
-	 * const stop = jobs.subscribe(["sync"], () => {
-	 *   const v = jobs.getJobState(["sync"]);
-	 *   console.log(v.status, v.data, v.context.cursor);
-	 * });
-	 * // stop();
+	 * Регистрирует джобу по ключу без немедленного запуска. Для фонового цикла: список ключей + `tickJob` по каждому.
 	 */
-	subscribe(jobKey: JobKey, listener: () => void): () => void {
+	registerJob<TData>(options: JobRunOptions<TData>): void {
+		const staleFn = options.staleFn ?? defaultStaleFn();
+		const entry = this.ensureEntry(options.jobKey, {
+			jobKey: options.jobKey,
+			jobFn: options.jobFn,
+			staleFn,
+			registered: true,
+		});
+		entry.state = {
+			...entry.state,
+			isStale: computeIsStale(entry),
+		};
+		syncMetaFromState(entry);
+		this.notify(entry);
+	}
+
+	/**
+	 * Если джоба зарегистрирована — то же, что `runJob` с сохранёнными `jobFn` / `staleFn`. Иначе `not_registered`.
+	 */
+	async tickJob<TData>(jobKey: JobKey): Promise<TickJobResult<TData>> {
+		const entry = findEntry<TData>(this.cache, jobKey);
+		if (!entry?.registered) {
+			return { kind: "not_registered" };
+		}
+		const hadSuccess = entry.state.status === "success" && entry.state.data !== undefined;
+		const wasStale = computeIsStale(entry);
+		try {
+			const data = await this.runJob({
+				jobKey: entry.jobKey,
+				jobFn: entry.jobFn,
+				staleFn: entry.staleFn,
+			});
+			if (hadSuccess && !wasStale) {
+				return { kind: "cached", data };
+			}
+			return { kind: "completed", data };
+		} catch (e) {
+			const error = e instanceof Error ? e : new Error(String(e));
+			return { kind: "failed", error };
+		}
+	}
+
+	/** Последовательный tick по списку ключей. */
+	async tickJobs(jobKeys: readonly JobKey[]): Promise<void> {
+		for (const key of jobKeys) {
+			await this.tickJob(key);
+		}
+	}
+
+	/** Ключи джоб, для которых вызывали `registerJob`, `runJob` или `setJobData`. */
+	getRegisteredJobKeys(): JobKey[] {
+		const out: JobKey[] = [];
+		for (const entry of this.cache.values()) {
+			if (entry.registered) {
+				out.push(entry.jobKey);
+			}
+		}
+		return out;
+	}
+
+	/**
+	 * Подписка: `listener` получает **JobView** (дискриминированный union по `status`).
+	 */
+	subscribe<TData = unknown>(
+		jobKey: JobKey,
+		listener: (snapshot: JobView<TData>) => void,
+	): () => void {
 		const entry = this.ensureEntry(jobKey, {
 			jobKey,
 			jobFn: async () => {
 				throw new Error(
-					"JobController: нет jobFn для этой джобы — сначала runJob или setJobData",
+					"JobController: нет jobFn — вызовите registerJob, runJob или setJobData",
 				);
 			},
 			staleFn: defaultStaleFn(),
+			registered: false,
 		});
-		entry.subscribers.add(listener);
+		const wrapped: JobListener = (snap) => listener(snap as JobView<TData>);
+		entry.subscribers.add(wrapped);
 		this.cancelGc(entry);
 		return () => {
-			entry.subscribers.delete(listener);
+			entry.subscribers.delete(wrapped);
 			this.scheduleGc(entry);
 		};
 	}
 
 	private notify(entry: CacheEntry) {
+		const snapshot = toJobView(entry);
 		for (const fn of entry.subscribers) {
 			try {
-				fn();
+				fn(snapshot);
 			} catch (e) {
 				console.error("JobController subscriber error:", e);
 			}
@@ -233,13 +373,16 @@ export class JobController {
 
 	private ensureEntry<TData>(
 		jobKey: JobKey,
-		initial: Pick<CacheEntry<TData>, "jobKey" | "jobFn" | "staleFn">,
+		initial: Pick<CacheEntry<TData>, "jobKey" | "jobFn" | "staleFn" | "registered">,
 	): CacheEntry<TData> {
 		const id = hashKey(jobKey);
 		let entry = this.cache.get(id) as CacheEntry<TData> | undefined;
 		if (entry && keysEqual(entry.jobKey, jobKey)) {
 			entry.jobFn = initial.jobFn;
 			entry.staleFn = initial.staleFn;
+			if (initial.registered) {
+				entry.registered = true;
+			}
 			return entry;
 		}
 		if (entry) {
@@ -249,12 +392,16 @@ export class JobController {
 		if (existing) {
 			existing.jobFn = initial.jobFn;
 			existing.staleFn = initial.staleFn;
+			if (initial.registered) {
+				existing.registered = true;
+			}
 			return existing;
 		}
 		entry = {
 			jobKey,
 			jobFn: initial.jobFn,
 			staleFn: initial.staleFn,
+			registered: initial.registered,
 			invalidated: false,
 			ctx: createContext(),
 			state: {
@@ -272,7 +419,7 @@ export class JobController {
 		return entry;
 	}
 
-	private patchState<TData>(entry: CacheEntry<TData>, patch: Partial<JobState<TData>>) {
+	private patchState<TData>(entry: CacheEntry<TData>, patch: Partial<JobStatePlain<TData>>) {
 		const next = { ...entry.state, ...patch };
 		entry.state = {
 			...next,
@@ -294,6 +441,7 @@ export class JobController {
 			jobKey: options.jobKey,
 			jobFn: options.jobFn,
 			staleFn,
+			registered: true,
 		});
 
 		const shouldRun =
@@ -360,6 +508,7 @@ export class JobController {
 				jobKey,
 				jobFn: async (_ctx) => data,
 				staleFn: defaultStaleFn(),
+				registered: true,
 				invalidated: false,
 				ctx,
 				state: {
@@ -375,8 +524,10 @@ export class JobController {
 			};
 			syncMetaFromState(newEntry);
 			this.cache.set(id, newEntry);
+			this.notify(newEntry);
 			return;
 		}
+		entry.registered = true;
 		entry.ctx.meta.endedAt = now();
 		entry.invalidated = false;
 		this.patchState(entry, {
@@ -404,7 +555,7 @@ export class JobController {
 			};
 			syncMetaFromState(entry);
 			this.notify(entry);
-			if (refetchActive && entry.subscribers.size > 0) {
+			if (refetchActive && entry.registered && entry.subscribers.size > 0) {
 				void this.runJob({
 					jobKey: entry.jobKey,
 					jobFn: entry.jobFn,
