@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import type { CopyAnalysis, StartCopyData } from "copymachine-shared";
-import { apiClient } from "#/lib/api";
+import { axs } from "#/lib/api";
 
 export function copyAnalysisQueryKey(sourcePath: string, targetPath: string) {
 	return ["copyAnalysis", sourcePath, targetPath] as const;
@@ -18,7 +18,7 @@ export function useCopyAnalysisQuery(params: {
 				sourcePath: params.sourcePath,
 				targetPath: params.targetPath,
 			};
-			const { data } = await apiClient.post<CopyAnalysis>(
+			const { data } = await axs.post<CopyAnalysis>(
 				"/copy/analysis",
 				body,
 			);

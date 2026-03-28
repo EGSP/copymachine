@@ -9,6 +9,6 @@ export function backendBaseUrl(): string {
 }
 
 /** Клиент к REST API бэкенда (префикс `/api`) */
-export const apiClient = axios.create({
+export const axs = axios.create({
 	baseURL: `${backendBaseUrl()}/api`,
 });

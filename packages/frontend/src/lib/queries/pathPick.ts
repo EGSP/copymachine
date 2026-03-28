@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { apiClient } from "#/lib/api";
+import { axs } from "#/lib/api";
 
 export type PathPickMode = "file" | "folder";
 
@@ -10,8 +10,8 @@ export function usePathPickMutation() {
 		mutationFn: async (mode: PathPickMode) => {
 			const { data } =
 				mode === "folder"
-					? await apiClient.post<string | null>("/path-pick/folder")
-					: await apiClient.post<string | null>("/path-pick/file");
+					? await axs.post<string | null>("/path-pick/folder")
+					: await axs.post<string | null>("/path-pick/file");
 			return data;
 		},
 	});
