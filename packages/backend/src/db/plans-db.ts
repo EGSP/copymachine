@@ -75,6 +75,11 @@ export class PlansDB {
 		return db.data.plans;
 	}
 
+	async getById(id: string) {
+		const db = await this.getDb();
+		return db.data.plans.find((item) => item.id === id);
+	}
+
 	async create(plan: Plan) {
 		const db = await this.getDb();
 		const planWithId = this.ensurePlanId(plan);

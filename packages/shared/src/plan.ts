@@ -8,4 +8,12 @@ export type Plan = {
 	target?: PathInfo;
 	/** Расписание запуска плана */
 	schedule?: Schedule;
+	executions?: PlanExecution[];
 };
+
+export type PlanExecution = {
+	startedAt?: number | undefined,
+	endedAt?: number | undefined,
+	status: "running" | "finished" | "error",
+	errors?: string[] | undefined,
+}

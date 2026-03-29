@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 
-import { isTime, parseTime, type Time } from "copymachine-shared";
+import { compareTime, isTime, parseTime, TimeComparison, type Time } from "copymachine-shared";
 
 describe("isTime", () => {
 	it.each([
@@ -50,5 +50,17 @@ describe("parseTime", () => {
 		"ab:cd",
 	])("Время %s невалидно", (value) => {
 		expect(() => parseTime(value)).toThrow(`Неверный формат времени: ${value}`);
+	});
+});
+
+describe("compareTime", () => {
+	it.each([
+		["00:00", "00:00", TimeComparison.Equal],
+		["00:00", "09:05", TimeComparison.Less],
+		["09:05", "00:00", TimeComparison.Greater],
+		["12:34", "23:59", TimeComparison.Less],
+		["23:59", "12:34", TimeComparison.Greater],
+	])("Время %s и %s сравниваются как %s", (time1, time2, expected) => {
+		expect(compareTime(parseTime(time1), parseTime(time2))).toBe(expected);
 	});
 });
