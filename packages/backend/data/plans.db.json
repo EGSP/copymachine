@@ -52,9 +52,105 @@
           "tags": [
             "accepted"
           ]
+        },
+        {
+          "startedAt": 1774887055255,
+          "status": "error",
+          "endedAt": 1774887055262,
+          "errors": [
+            "Not implemented"
+          ],
+          "tags": [
+            "accepted"
+          ]
+        },
+        {
+          "startedAt": 1774887495046,
+          "status": "error",
+          "endedAt": 1774887505053,
+          "errors": [
+            "Not implemented"
+          ],
+          "tags": [
+            "accepted"
+          ]
+        },
+        {
+          "startedAt": 1774887853198,
+          "status": "error",
+          "endedAt": 1774887863204,
+          "errors": [
+            "Not implemented"
+          ],
+          "tags": [
+            "accepted"
+          ]
+        },
+        {
+          "startedAt": 1774888483673,
+          "status": "error",
+          "endedAt": 1774888493684,
+          "errors": [
+            "Not implemented"
+          ],
+          "tags": [
+            "accepted"
+          ]
+        },
+        {
+          "startedAt": 1774888846394,
+          "status": "error",
+          "endedAt": 1774888856400,
+          "errors": [
+            "Not implemented"
+          ],
+          "tags": [
+            "accepted"
+          ]
+        },
+        {
+          "startedAt": 1774889024798,
+          "status": "error",
+          "endedAt": 1774889034799,
+          "errors": [
+            "Not implemented"
+          ],
+          "tags": [
+            "accepted"
+          ]
+        },
+        {
+          "startedAt": 1774889297804,
+          "status": "error",
+          "endedAt": 1774889297805,
+          "errors": [
+            "Not implemented"
+          ],
+          "tags": [
+            "accepted"
+          ]
+        },
+        {
+          "startedAt": 1774889676824,
+          "status": "error",
+          "endedAt": 1774889676825,
+          "errors": [
+            "Not implemented"
+          ],
+          "tags": [
+            "accepted"
+          ]
+        },
+        {
+          "startedAt": 1774889806926,
+          "status": "error",
+          "endedAt": 1774889816940,
+          "errors": [
+            "Not implemented"
+          ]
         }
       ],
-      "versionTimestamp": 1774883461400
+      "versionTimestamp": 1774889816940
     },
     {
       "name": "Кирилллииисо",
@@ -90,7 +186,7 @@
       },
       "id": "410e98f2-8603-47a8-b31a-95045eac2410",
       "schedule": {
-        "time": "20:15"
+        "time": "17:15"
       },
       "executions": [
         {
@@ -99,10 +195,32 @@
           "endedAt": 1774869851010,
           "errors": [
             "Not implemented"
+          ],
+          "tags": [
+            "accepted"
+          ]
+        },
+        {
+          "startedAt": 1774887565090,
+          "status": "error",
+          "endedAt": 1774887575104,
+          "errors": [
+            "Not implemented"
+          ],
+          "tags": [
+            "accepted"
+          ]
+        },
+        {
+          "startedAt": 1774889886988,
+          "status": "error",
+          "endedAt": 1774889897006,
+          "errors": [
+            "Not implemented"
           ]
         }
       ],
-      "versionTimestamp": 1774876931862
+      "versionTimestamp": 1774889897006
     },
     {
       "name": "New Plan",

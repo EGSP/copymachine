@@ -53,8 +53,8 @@ export function PlanWindow() {
 		scheduleDraftRef.current = plan.schedule ? { ...plan.schedule } : {};
 		setExecutionsDraft(
 			plan.executions
-			? plan.executions.map((execution) => ({ ...execution }))
-			: [],
+				? plan.executions.map((execution) => ({ ...execution }))
+				: [],
 		);
 		setShowPreviousExecutions(false);
 		setSourcePathDraft(plan.source?.path ?? "");
@@ -228,20 +228,20 @@ export function PlanWindow() {
 								return null;
 							}
 							return (
-						<PlanExecutionView
-							key={`${execution.startedAt ?? "none"}-${index}`}
-							index={index}
-							execution={execution}
-							defaultOpen={isNewestExecution}
-							onExecutionChange={(updatedExecution) => {
-								setExecutionsDraft((currentExecutions) =>
-									currentExecutions.map((item, itemIndex) =>
-										itemIndex === index ? updatedExecution : item,
-									),
-								);
-								setDirty(true);
-							}}
-						/>
+								<PlanExecutionView
+									key={`${execution.startedAt ?? "none"}-${index}`}
+									index={index}
+									execution={execution}
+									defaultOpen={isNewestExecution}
+									onExecutionChange={(updatedExecution) => {
+										setExecutionsDraft((currentExecutions) =>
+											currentExecutions.map((item, itemIndex) =>
+												itemIndex === index ? updatedExecution : item,
+											),
+										);
+										setDirty(true);
+									}}
+								/>
 							);
 						})}
 					</>

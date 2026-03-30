@@ -49,6 +49,17 @@ export class PlansDB {
 		};
 	}
 
+	/**
+	 * Сортирует execution по startedAt.
+	 * Самые новые execution будут в конце массива.
+	 */
+	private ensureExecutionOrder(plan: Plan): Plan {
+		if (plan.executions) {
+			plan.executions.sort((a, b) => (a.startedAt ?? 0) - (b.startedAt ?? 0));
+		}
+		return plan;
+	}
+
 	async init() {
 		if (this.lowDb) {
 			return this.lowDb;
@@ -67,7 +78,9 @@ export class PlansDB {
 			await db.read();
 			await db.update((data) => {
 				for (let i = 0; i < data.plans.length; i += 1) {
-					data.plans[i] = this.ensureVersion(this.ensurePlanId(data.plans[i]));
+					data.plans[i] = this.ensureVersion(
+						this.ensureExecutionOrder(
+							this.ensurePlanId(data.plans[i])));
 				}
 			});
 
@@ -108,14 +121,14 @@ export class PlansDB {
 
 	async update(plan: Plan) {
 		const db = await this.getDb();
-		const planWithId = this.withUpdatedVersion(this.ensurePlanId(plan));
-		const planIndex = db.data.plans.findIndex((item) => item.id === planWithId.id);
+		const validatedPlan = this.withUpdatedVersion(this.ensurePlanId(plan));
+		const planIndex = db.data.plans.findIndex((item) => item.id === validatedPlan.id);
 		if (planIndex === -1) {
 			return;
 		}
 
 		await db.update((data) => {
-			data.plans[planIndex] = planWithId;
+			data.plans[planIndex] = validatedPlan;
 		});
 	}
 
