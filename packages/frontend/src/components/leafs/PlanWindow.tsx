@@ -1,6 +1,7 @@
-import type { Schedule } from "copymachine-shared";
+import type { PlanExecution, Schedule } from "copymachine-shared";
 import { useEffect, useRef, useState } from "react";
 import DirtyMarkBadge from "#/components/builblocks/DirtyMarkBadge";
+import Frame from "#/components/builblocks/Frame";
 import {
 	AlertDialog,
 	AlertDialogCancel,
@@ -18,12 +19,14 @@ import {
 	useUpdatePlanMutation,
 } from "#/lib/queries/plans";
 import { usePlansStore } from "#/stores/plansStore";
+import PlanExecutionView from "./PlanExecutionView";
 import ScheduleFrame from "./ScheduleFrame";
 
 export function PlanWindow() {
 	const plan = usePlansStore((s) => s.plan);
 	const clearPlan = usePlansStore((s) => s.clearPlan);
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+	const [executionsDraft, setExecutionsDraft] = useState<PlanExecution[]>([]);
 	const setDirty = useDirtyMarkStore((s) => s.setDirty);
 	const { pendingTarget, cancelPendingSelection, proceedPendingSelection } =
 		usePlanSelectionGuard();
@@ -43,6 +46,11 @@ export function PlanWindow() {
 		}
 		// Только смена плана; иначе несохранённый черновик затёр бы новым объектом plan из стора
 		scheduleDraftRef.current = plan.schedule ? { ...plan.schedule } : {};
+		setExecutionsDraft(
+			plan.executions
+			? plan.executions.map((execution) => ({ ...execution }))
+			: [],
+		);
 	}, [plan?.id]);
 
 	const updateMutation = useUpdatePlanMutation();
@@ -54,6 +62,7 @@ export function PlanWindow() {
 	}
 
 	const planId = plan.id;
+	const executionsToRender = executionsDraft;
 
 	return (
 		<div className="p-3">
@@ -68,6 +77,7 @@ export function PlanWindow() {
 							{
 								...plan,
 								schedule: scheduleDraftRef.current,
+								executions: executionsDraft,
 							},
 							{ onSuccess: () => setDirty(false) },
 						)
@@ -156,6 +166,27 @@ export function PlanWindow() {
 					setDirty(true);
 				}}
 			/>
+			<Frame label="Список исполнений" className="mt-3">
+				{executionsToRender.length > 0 ? (
+					executionsToRender.map((execution, index) => (
+						<PlanExecutionView
+							key={`${execution.startedAt ?? "none"}-${index}`}
+							index={index}
+							execution={execution}
+							onExecutionChange={(updatedExecution) => {
+								setExecutionsDraft((currentExecutions) =>
+									currentExecutions.map((item, itemIndex) =>
+										itemIndex === index ? updatedExecution : item,
+									),
+								);
+								setDirty(true);
+							}}
+						/>
+					))
+				) : (
+					<p className="text-xs text-muted-foreground">Неизвестно</p>
+				)}
+			</Frame>
 		</div>
 	);
 }

@@ -12,7 +12,7 @@
       },
       "id": "29612c16-bfc1-4857-a88d-6c394d3b5a94",
       "schedule": {
-        "time": "16:20"
+        "time": "15:40"
       },
       "executions": [
         {
@@ -21,6 +21,9 @@
           "endedAt": 1774869851009,
           "errors": [
             "Not implemented"
+          ],
+          "tags": [
+            "accepted"
           ]
         }
       ]
