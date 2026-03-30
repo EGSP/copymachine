@@ -1,7 +1,8 @@
-import type { PlanExecution, Schedule } from "copymachine-shared";
+import { PathType, type PlanExecution, type Schedule } from "copymachine-shared";
 import { useEffect, useRef, useState } from "react";
 import DirtyMarkBadge from "#/components/builblocks/DirtyMarkBadge";
 import Frame from "#/components/builblocks/Frame";
+import PathPicker from "#/components/PathPicker";
 import {
 	AlertDialog,
 	AlertDialogCancel,
@@ -27,6 +28,8 @@ export function PlanWindow() {
 	const clearPlan = usePlansStore((s) => s.clearPlan);
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const [executionsDraft, setExecutionsDraft] = useState<PlanExecution[]>([]);
+	const [sourcePathDraft, setSourcePathDraft] = useState("");
+	const [targetPathDraft, setTargetPathDraft] = useState("");
 	const setDirty = useDirtyMarkStore((s) => s.setDirty);
 	const { pendingTarget, cancelPendingSelection, proceedPendingSelection } =
 		usePlanSelectionGuard();
@@ -51,6 +54,8 @@ export function PlanWindow() {
 			? plan.executions.map((execution) => ({ ...execution }))
 			: [],
 		);
+		setSourcePathDraft(plan.source?.path ?? "");
+		setTargetPathDraft(plan.target?.path ?? "");
 	}, [plan?.id]);
 
 	const updateMutation = useUpdatePlanMutation();
@@ -63,6 +68,8 @@ export function PlanWindow() {
 
 	const planId = plan.id;
 	const executionsToRender = executionsDraft;
+	const sourcePath = sourcePathDraft.trim();
+	const targetPath = targetPathDraft.trim();
 
 	return (
 		<div className="p-3">
@@ -76,6 +83,12 @@ export function PlanWindow() {
 						updateMutation.mutate(
 							{
 								...plan,
+								source: sourcePath
+									? { path: sourcePath, type: PathType.DIRECTORY }
+									: undefined,
+								target: targetPath
+									? { path: targetPath, type: PathType.DIRECTORY }
+									: undefined,
 								schedule: scheduleDraftRef.current,
 								executions: executionsDraft,
 							},
@@ -158,6 +171,28 @@ export function PlanWindow() {
 			<p className="text-sm text-(--sea-ink)">
 				План: {plan.name}, ID: {plan.id ?? "нет id"}, Версия: {plan.versionTimestamp ?? "неизвестно"}
 			</p>
+			<Frame className="mt-3" label="Пути">
+				<div className="flex flex-col gap-3">
+					<PathPicker
+						label="Source"
+						value={sourcePathDraft}
+						onChange={(path) => {
+							setSourcePathDraft(path);
+							setDirty(true);
+						}}
+						placeholder="Выберите source"
+					/>
+					<PathPicker
+						label="Target"
+						value={targetPathDraft}
+						onChange={(path) => {
+							setTargetPathDraft(path);
+							setDirty(true);
+						}}
+						placeholder="Выберите target"
+					/>
+				</div>
+			</Frame>
 			<ScheduleFrame
 				key={plan.id ?? "new-plan"}
 				schedule={plan.schedule}

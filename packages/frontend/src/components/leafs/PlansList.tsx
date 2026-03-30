@@ -1,9 +1,11 @@
 import type { Plan } from "copymachine-shared";
+import { Plus } from "lucide-react";
 import { useEffect } from "react";
 import ListBox from "#/components/builblocks/ListBox";
+import { Button } from "#/components/ui/button";
 import { useDirtyMarkStore } from "#/contexts/DirtyMarkContext";
 import { usePlanSelectionGuard } from "#/contexts/PlanSelectionGuardContext";
-import { usePlansQuery } from "#/lib/queries/plans";
+import { useCreatePlanMutation, usePlansQuery } from "#/lib/queries/plans";
 import { usePlansStore } from "#/stores/plansStore";
 
 type PlansListProps = {
@@ -15,6 +17,7 @@ export default function PlansList({ plansQueryEnabled }: PlansListProps) {
 	const storePlan = usePlansStore((s) => s.plan);
 	const clearPlan = usePlansStore((s) => s.clearPlan);
 	const setDirty = useDirtyMarkStore((s) => s.setDirty);
+	const createPlanMutation = useCreatePlanMutation();
 
 	const plansQuery = usePlansQuery({ enabled: plansQueryEnabled });
 
@@ -43,6 +46,19 @@ export default function PlansList({ plansQueryEnabled }: PlansListProps) {
 
 	return (
 		<div className="p-3">
+			<div className="mb-2 flex justify-end">
+				<Button
+					type="button"
+					size="icon"
+					variant="outline"
+					disabled={createPlanMutation.isPending || !plansQueryEnabled}
+					onClick={() => createPlanMutation.mutate({ name: "New Plan" })}
+					aria-label="Добавить план"
+					title="Добавить план"
+				>
+					<Plus className="size-4" aria-hidden />
+				</Button>
+			</div>
 			{plans.length === 0 ? (
 				<p className="text-sm text-(--sea-ink-soft)">Нет ни одного плана.</p>
 			) : (
