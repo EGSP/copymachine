@@ -9,6 +9,7 @@ import {
 	CollapsibleContent,
 	CollapsibleTrigger,
 } from "#/components/ui/collapsible";
+import { cn } from "#/lib/utils";
 
 type PlanExecutionViewProps = {
 	execution?: PlanExecution;
@@ -76,7 +77,9 @@ export default function PlanExecutionView({
 					{errors.length > 0 ? (
 						<Badge
 							variant="ghost"
-							className="hover:bg-transparent hover:text-inherit dark:hover:bg-transparent"
+							className={
+								cn(isAccepted ? "text-(--color-info)" : "text-(--color-error)",
+								"hover:bg-transparent hover:text-inherit dark:hover:bg-transparent")}
 						>
 							<Bug aria-hidden />
 							{errors.length}

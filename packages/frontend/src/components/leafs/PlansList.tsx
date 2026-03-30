@@ -1,6 +1,12 @@
 import type { Plan } from "copymachine-shared";
 import { useNavigate } from "@tanstack/react-router";
-import { Plus } from "lucide-react";
+import {
+	Calendar,
+	CalendarCheck,
+	CalendarClock,
+	CalendarX,
+	Plus,
+} from "lucide-react";
 import { useEffect } from "react";
 import ListBox from "#/components/builblocks/ListBox";
 import { Button } from "#/components/ui/button";
@@ -12,6 +18,31 @@ import { usePlansStore } from "#/stores/plansStore";
 type PlansListProps = {
 	plansQueryEnabled: boolean;
 };
+
+/** Статус последней записи в executions (если список пуст — undefined). */
+function getLastExecutionStatus(plan: Plan) {
+	const list = plan.executions;
+	if (list === undefined || list.length === 0) {
+		return undefined;
+	}
+	return list[list.length - 1]?.status;
+}
+
+function PlanStatusIcon({ plan }: { plan: Plan }) {
+	const status = getLastExecutionStatus(plan);
+	const iconClass = "size-5 shrink-0 ";
+
+	switch (status) {
+		case "finished":
+			return <CalendarCheck className={iconClass + "text-(--color-success)"} aria-hidden />;
+		case "running":
+			return <CalendarClock className={iconClass + "text-(--color-action)"} aria-hidden />;
+		case "error":
+			return <CalendarX className={iconClass + "text-(--color-error)"} aria-hidden />;
+		default:
+			return <Calendar className={iconClass} aria-hidden />;
+	}
+}
 
 export default function PlansList({ plansQueryEnabled }: PlansListProps) {
 	const navigate = useNavigate();
@@ -48,7 +79,7 @@ export default function PlansList({ plansQueryEnabled }: PlansListProps) {
 	}, [storePlan?.id, setDirty]);
 
 	return (
-		<div className="p-3">
+		<div className="py-3 pr-2">
 			<div className="mb-2 flex justify-end">
 				<Button
 					type="button"
@@ -71,7 +102,12 @@ export default function PlansList({ plansQueryEnabled }: PlansListProps) {
 					getItemKey={(item, index) => item.id ?? `row-${index}`}
 					onSelect={(item) => trySelectPlan(item)}
 					ariaLabel="Список планов"
-					renderItem={({ item }) => item.name}
+					renderItem={({ item }) => (
+						<div className="flex min-w-0 flex-1 items-center gap-2">
+							<PlanStatusIcon plan={item} />
+							<span className="min-w-0 truncate">{item.name}</span>
+						</div>
+					)}
 				/>
 			)}
 		</div>

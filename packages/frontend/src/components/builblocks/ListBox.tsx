@@ -45,7 +45,9 @@ export function ListBoxItem({
 			disabled={disabled}
 			onClick={onClick}
 			className={cn(
-				"flex w-full cursor-pointer items-center justify-start border border-transparent px-2.5 py-2 text-left text-xs outline-none transition-colors",
+				"flex w-full cursor-pointer items-center justify-start border px-2.5 py-2 text-left text-xs outline-none transition-colors",
+				/* Соседние строки: общая линия 1px, без «двойной» границы */
+				"border-border/40 not-first:-mt-px hover:z-10 hover:border-border/55",
 				"hover:bg-muted/60 focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50",
 				"disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
 				selected && "border-border bg-muted",
