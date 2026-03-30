@@ -13,7 +13,17 @@
       "id": "29612c16-bfc1-4857-a88d-6c394d3b5a94",
       "schedule": {
         "time": "16:20"
-      }
+      },
+      "executions": [
+        {
+          "startedAt": 1774869836003,
+          "status": "error",
+          "endedAt": 1774869851009,
+          "errors": [
+            "Not implemented"
+          ]
+        }
+      ]
     },
     {
       "name": "Кирилллииисо",
@@ -28,7 +38,13 @@
       "id": "9ee47219-7a63-4097-aff4-f7a98bf46bd8",
       "schedule": {
         "time": "11:15"
-      }
+      },
+      "executions": [
+        {
+          "startedAt": 1774870042961,
+          "status": "running"
+        }
+      ]
     },
     {
       "name": "Poterin",
@@ -43,7 +59,17 @@
       "id": "410e98f2-8603-47a8-b31a-95045eac2410",
       "schedule": {
         "time": "20:15"
-      }
+      },
+      "executions": [
+        {
+          "startedAt": 1774869836005,
+          "status": "error",
+          "endedAt": 1774869851010,
+          "errors": [
+            "Not implemented"
+          ]
+        }
+      ]
     }
   ]
 }

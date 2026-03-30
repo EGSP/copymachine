@@ -11,6 +11,14 @@ export function toDate(time: Time): Date{
     return new Date(0, 0, 0, hours, minutes);
 }
 
+export function toCurrentDate(time: Time): Date{
+    const now = new Date();
+    const timeDate = toDate(time);
+    now.setHours(timeDate.getHours());
+    now.setMinutes(timeDate.getMinutes());
+    return now;
+}
+
 export enum TimeComparison {
     Less = -1,
     Equal = 0,

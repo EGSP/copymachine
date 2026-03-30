@@ -1,4 +1,4 @@
-import type { PathInfo, Plan, PlanExecution, PlanReadyForScheduling, Schedule, ScheduleReadyForScheduling, Time } from "copymachine-shared";
+import { toCurrentDate, type PathInfo, type Plan, type PlanExecution, type PlanReadyForScheduling, type Schedule, type ScheduleReadyForScheduling, type Time } from "copymachine-shared";
 import { plansDb } from "../../db/instance.js";
 import { getJobController } from "../background.js";
 import { setTimeout } from "node:timers/promises";
@@ -10,14 +10,13 @@ export class PlanScheduler {
 		const jobController = getJobController();
 
 		for (const plan of plans) {
-			const check = this.precheckPlan(plan);
+			const check = this.validatePlan(plan);
 			if (!check.ok) {
 				console.warn(`Plan ${plan.id} is invalid: ${check.errors.join(", ")}`);
 				continue;
 			}
 			const job = jobController.get(check.plan.id);
 
-			// TODO: Job существует и нужно будет обработать результат и запланировать следующий запуск.
 			if (job) {
 				continue;
 			} else {
@@ -27,9 +26,7 @@ export class PlanScheduler {
 						await this.runPlan(ctx.plan as PlanReadyForScheduling);
 					},
 					activationFn: (ctx) => {
-						const plan = ctx.plan as PlanReadyForScheduling;
-
-						return this.shouldRun(plan);
+						return this.shouldRun(ctx.plan as PlanReadyForScheduling);
 					},
 					fillContext: {
 						plan: { ...check.plan }
@@ -40,8 +37,8 @@ export class PlanScheduler {
 		}
 	}
 
-	/** Выполняет один запуск плана (сохранение execution в БД, имитация работы). */
 	private async runPlan(plan: PlanReadyForScheduling): Promise<void> {
+		console.log(`Job ${plan.name} - (${plan.id}) started`);
 		let execution: PlanExecution = {
 			startedAt: Date.now(),
 			status: "running",
@@ -53,7 +50,9 @@ export class PlanScheduler {
 		});
 
 		try {
+
 			await setTimeout(15 * 1000);
+			throw new Error("Not implemented");
 		} catch (error) {
 			execution.endedAt = Date.now();
 			execution.status = "error";
@@ -79,7 +78,7 @@ export class PlanScheduler {
 	 * @returns {{ ok: true, plan: PlanReadyForScheduling }} Если план имеет все необходимые свойства.
 	 * @returns {{ ok: false, errors: string[] }} Если план не имеет всех необходимых свойств
 	 */
-	precheckPlan(plan: Plan): { ok: true, plan: PlanReadyForScheduling }
+	validatePlan(plan: Plan): { ok: true, plan: PlanReadyForScheduling }
 		| { ok: false, errors: string[] } {
 		const errors: string[] = [];
 
@@ -87,7 +86,7 @@ export class PlanScheduler {
 		if (!plan.schedule) {
 			errors.push("Plan schedule is required");
 		} else {
-			const checkedSchedule = this.precheckSchedule(plan.schedule);
+			const checkedSchedule = this.validateSchedule(plan.schedule);
 			if (!checkedSchedule.ok)
 				errors.push(...checkedSchedule.errors);
 		}
@@ -108,7 +107,7 @@ export class PlanScheduler {
 		};
 	}
 
-	precheckSchedule(schedule: Schedule): { ok: true, schedule: ScheduleReadyForScheduling }
+	validateSchedule(schedule: Schedule): { ok: true, schedule: ScheduleReadyForScheduling }
 		| { ok: false, errors: string[] } {
 		const errors: string[] = [];
 		if (!schedule.time)
@@ -119,15 +118,25 @@ export class PlanScheduler {
 	}
 
 	shouldRun(plan: PlanReadyForScheduling): boolean {
-		const now = new Date();
 		const schedule = plan.schedule;
 
-		const time = schedule.time as Time;
-		// TODO
+		// last execution by startedAt
+		const lastExecution = plan.executions?.sort((a, b) => (a.startedAt ?? 0) - (b.startedAt ?? 0))[0];
 
+		if (lastExecution) { 
+			if (lastExecution.status === "running") 
+				return false;
+			if (lastExecution.status === "error")
+				return false;
+		}
+
+		const now = new Date();
+		const time = schedule.time as Time;
+		
+		const timeDate = toCurrentDate(time);
+		if (now >= timeDate)
+			return true;
 
 		return false;
 	}
-
-
 }
