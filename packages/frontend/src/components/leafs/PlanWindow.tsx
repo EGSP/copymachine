@@ -1,4 +1,5 @@
 import { PathType, type PlanExecution, type Schedule } from "copymachine-shared";
+import { FoldVertical, UnfoldVertical } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import DirtyMarkBadge from "#/components/builblocks/DirtyMarkBadge";
 import Frame from "#/components/builblocks/Frame";
@@ -28,6 +29,7 @@ export function PlanWindow() {
 	const clearPlan = usePlansStore((s) => s.clearPlan);
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const [executionsDraft, setExecutionsDraft] = useState<PlanExecution[]>([]);
+	const [showPreviousExecutions, setShowPreviousExecutions] = useState(false);
 	const [sourcePathDraft, setSourcePathDraft] = useState("");
 	const [targetPathDraft, setTargetPathDraft] = useState("");
 	const setDirty = useDirtyMarkStore((s) => s.setDirty);
@@ -54,6 +56,7 @@ export function PlanWindow() {
 			? plan.executions.map((execution) => ({ ...execution }))
 			: [],
 		);
+		setShowPreviousExecutions(false);
 		setSourcePathDraft(plan.source?.path ?? "");
 		setTargetPathDraft(plan.target?.path ?? "");
 	}, [plan?.id]);
@@ -67,9 +70,6 @@ export function PlanWindow() {
 	}
 
 	const planId = plan.id;
-	const executionsToRender = executionsDraft
-		.map((execution, draftIndex) => ({ execution, draftIndex }))
-		.reverse();
 	const sourcePath = sourcePathDraft.trim();
 	const targetPath = targetPathDraft.trim();
 
@@ -204,23 +204,47 @@ export function PlanWindow() {
 				}}
 			/>
 			<Frame label="Список исполнений" className="mt-3">
-				{executionsToRender.length > 0 ? (
-					executionsToRender.map(({ execution, draftIndex }, index) => (
+				{executionsDraft.length > 0 ? (
+					<>
+						{executionsDraft.length > 1 ? (
+							<button
+								type="button"
+								className="inline-flex cursor-pointer items-center gap-1 text-xs text-muted-foreground hover:text-(--sea-ink-soft)"
+								onClick={() => setShowPreviousExecutions((value) => !value)}
+							>
+								{showPreviousExecutions ? (
+									<FoldVertical className="size-3.5" aria-hidden />
+								) : (
+									<UnfoldVertical className="size-3.5" aria-hidden />
+								)}
+								{showPreviousExecutions
+									? "Скрыть предыдущие"
+									: "Показать предыдущие"}
+							</button>
+						) : null}
+						{executionsDraft.map((execution, index) => {
+							const isNewestExecution = index === executionsDraft.length - 1;
+							if (!showPreviousExecutions && !isNewestExecution) {
+								return null;
+							}
+							return (
 						<PlanExecutionView
-							key={`${execution.startedAt ?? "none"}-${draftIndex}`}
+							key={`${execution.startedAt ?? "none"}-${index}`}
 							index={index}
 							execution={execution}
-							defaultOpen={index === 0}
+							defaultOpen={isNewestExecution}
 							onExecutionChange={(updatedExecution) => {
 								setExecutionsDraft((currentExecutions) =>
 									currentExecutions.map((item, itemIndex) =>
-										itemIndex === draftIndex ? updatedExecution : item,
+										itemIndex === index ? updatedExecution : item,
 									),
 								);
 								setDirty(true);
 							}}
 						/>
-					))
+							);
+						})}
+					</>
 				) : (
 					<p className="text-xs text-muted-foreground">Неизвестно</p>
 				)}

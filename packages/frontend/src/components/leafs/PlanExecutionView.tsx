@@ -1,6 +1,6 @@
 import ErrorRow from "#/components/builblocks/ErrorRow";
 import type { PlanExecution } from "copymachine-shared";
-import { Activity, Bug, ChevronDown, Timer, TimerOff } from "lucide-react";
+import { Activity, Bug, ChevronDown, Hash, Timer, TimerOff } from "lucide-react";
 import Frame from "#/components/builblocks/Frame";
 import { Checkbox } from "#/components/ui/checkbox";
 import { Badge } from "#/components/ui/badge";
@@ -45,6 +45,10 @@ export default function PlanExecutionView({
 					className="flex w-full flex-wrap items-center gap-2 text-left"
 					aria-label={`Раскрыть исполнение ${index + 1}`}
 				>
+					<Badge variant="outline">
+						<Hash aria-hidden />
+						{index + 1}
+					</Badge>
 					<Badge variant="outline">
 						<Timer aria-hidden />
 						{formatTimestamp(execution?.startedAt)}
