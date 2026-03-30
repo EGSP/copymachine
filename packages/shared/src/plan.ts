@@ -11,9 +11,13 @@ export type Plan = {
 	executions?: PlanExecution[];
 };
 
+
+export type PlanExecutionTag = "accepted";
+
 export type PlanExecution = {
 	startedAt?: number | undefined,
 	endedAt?: number | undefined,
-	status: "running" | "finished" | "error",
+	status?: "running" | "finished" | "error",
 	errors?: string[] | undefined,
+	tags?: PlanExecutionTag[] | undefined,
 }

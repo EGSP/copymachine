@@ -126,7 +126,9 @@ export class PlanScheduler {
 		if (lastExecution) { 
 			if (lastExecution.status === "running") 
 				return false;
-			if (lastExecution.status === "error")
+
+			const checkedTag = lastExecution.tags?.includes('accepted');
+			if (lastExecution.status === "error" && !checkedTag)
 				return false;
 		}
 
