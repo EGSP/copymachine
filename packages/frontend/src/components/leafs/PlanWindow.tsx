@@ -67,7 +67,9 @@ export function PlanWindow() {
 	}
 
 	const planId = plan.id;
-	const executionsToRender = executionsDraft;
+	const executionsToRender = executionsDraft
+		.map((execution, draftIndex) => ({ execution, draftIndex }))
+		.reverse();
 	const sourcePath = sourcePathDraft.trim();
 	const targetPath = targetPathDraft.trim();
 
@@ -203,15 +205,16 @@ export function PlanWindow() {
 			/>
 			<Frame label="Список исполнений" className="mt-3">
 				{executionsToRender.length > 0 ? (
-					executionsToRender.map((execution, index) => (
+					executionsToRender.map(({ execution, draftIndex }, index) => (
 						<PlanExecutionView
-							key={`${execution.startedAt ?? "none"}-${index}`}
+							key={`${execution.startedAt ?? "none"}-${draftIndex}`}
 							index={index}
 							execution={execution}
+							defaultOpen={index === 0}
 							onExecutionChange={(updatedExecution) => {
 								setExecutionsDraft((currentExecutions) =>
 									currentExecutions.map((item, itemIndex) =>
-										itemIndex === index ? updatedExecution : item,
+										itemIndex === draftIndex ? updatedExecution : item,
 									),
 								);
 								setDirty(true);
