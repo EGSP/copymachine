@@ -1,4 +1,5 @@
 import { PathType, type PlanExecution, type Schedule } from "copymachine-shared";
+import { useNavigate } from "@tanstack/react-router";
 import { FoldVertical, UnfoldVertical } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import DirtyMarkBadge from "#/components/builblocks/DirtyMarkBadge";
@@ -25,6 +26,7 @@ import PlanExecutionView from "./PlanExecutionView";
 import ScheduleFrame from "./ScheduleFrame";
 
 export function PlanWindow() {
+	const navigate = useNavigate();
 	const plan = usePlansStore((s) => s.plan);
 	const clearPlan = usePlansStore((s) => s.clearPlan);
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -159,6 +161,11 @@ export function PlanWindow() {
 									deleteMutation.mutate(planId, {
 										onSuccess: () => {
 											clearPlan();
+											void navigate({
+												to: "/plans",
+												search: {},
+												replace: true,
+											});
 											setDeleteDialogOpen(false);
 										},
 									});

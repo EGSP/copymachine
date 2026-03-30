@@ -147,10 +147,21 @@
           "endedAt": 1774889816940,
           "errors": [
             "Not implemented"
+          ],
+          "tags": [
+            "accepted"
+          ]
+        },
+        {
+          "startedAt": 1774892879088,
+          "status": "error",
+          "endedAt": 1774892889098,
+          "errors": [
+            "Not implemented"
           ]
         }
       ],
-      "versionTimestamp": 1774889816940
+      "versionTimestamp": 1774892889099
     },
     {
       "name": "Кирилллииисо",
@@ -217,10 +228,21 @@
           "endedAt": 1774889897006,
           "errors": [
             "Not implemented"
+          ],
+          "tags": [
+            "accepted"
+          ]
+        },
+        {
+          "startedAt": 1774892899097,
+          "status": "error",
+          "endedAt": 1774892909115,
+          "errors": [
+            "Not implemented"
           ]
         }
       ],
-      "versionTimestamp": 1774889897006
+      "versionTimestamp": 1774892909115
     },
     {
       "name": "New Plan",

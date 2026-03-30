@@ -1,4 +1,5 @@
 import type { Plan } from "copymachine-shared";
+import { useNavigate } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { useEffect } from "react";
 import ListBox from "#/components/builblocks/ListBox";
@@ -13,6 +14,7 @@ type PlansListProps = {
 };
 
 export default function PlansList({ plansQueryEnabled }: PlansListProps) {
+	const navigate = useNavigate();
 	const { trySelectPlan } = usePlanSelectionGuard();
 	const storePlan = usePlansStore((s) => s.plan);
 	const clearPlan = usePlansStore((s) => s.clearPlan);
@@ -36,8 +38,9 @@ export default function PlansList({ plansQueryEnabled }: PlansListProps) {
 		const exists = data.some((p) => p.id === id);
 		if (!exists) {
 			clearPlan();
+			void navigate({ to: "/plans", search: {}, replace: true });
 		}
-	}, [plansQuery.data, storePlan?.id, clearPlan]);
+	}, [plansQuery.data, storePlan?.id, clearPlan, navigate]);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: сбрасываем грязь при смене выбранного плана (по id)
 	useEffect(() => {

@@ -45,24 +45,39 @@ export default function PlanExecutionView({
 					className="flex w-full flex-wrap items-center gap-2 text-left"
 					aria-label={`Раскрыть исполнение ${index + 1}`}
 				>
-					<Badge variant="outline">
+					<Badge
+						variant="ghost"
+						className="hover:bg-transparent hover:text-inherit dark:hover:bg-transparent"
+					>
 						<Hash aria-hidden />
 						{index + 1}
 					</Badge>
-					<Badge variant="outline">
+					<Badge
+						variant="ghost"
+						className="hover:bg-transparent hover:text-inherit dark:hover:bg-transparent"
+					>
 						<Timer aria-hidden />
 						{formatTimestamp(execution?.startedAt)}
 					</Badge>
-					<Badge variant="outline">
+					<Badge
+						variant="ghost"
+						className="hover:bg-transparent hover:text-inherit dark:hover:bg-transparent"
+					>
 						<TimerOff aria-hidden />
 						{formatTimestamp(execution?.endedAt)}
 					</Badge>
-					<Badge variant="outline">
+					<Badge
+						variant="ghost"
+						className="hover:bg-transparent hover:text-inherit dark:hover:bg-transparent"
+					>
 						<Activity aria-hidden />
 						{formatStatus(execution?.status)}
 					</Badge>
 					{errors.length > 0 ? (
-						<Badge variant="outline">
+						<Badge
+							variant="ghost"
+							className="hover:bg-transparent hover:text-inherit dark:hover:bg-transparent"
+						>
 							<Bug aria-hidden />
 							{errors.length}
 						</Badge>

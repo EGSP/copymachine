@@ -1,3 +1,4 @@
+import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import {
 	createContext,
 	useCallback,
@@ -8,6 +9,9 @@ import {
 import type { Plan } from "copymachine-shared";
 import { useDirtyMarkStore } from "#/contexts/DirtyMarkContext";
 import { usePlansStore } from "#/stores/plansStore";
+
+const plansRouteApi = getRouteApi("/plans");
+const PLANS_TO = "/plans" as const;
 
 type PlanSelectionGuardState = {
 	/** Смена выбранного плана с учётом несохранённых правок */
@@ -23,6 +27,8 @@ const PlanSelectionGuardContext = createContext<PlanSelectionGuardState | null>(
 );
 
 export function PlanSelectionGuardProvider({ children }: { children: ReactNode }) {
+	const navigate = useNavigate();
+	const { planId: searchPlanId } = plansRouteApi.useSearch();
 	const getDirty = useDirtyMarkStore((s) => s.getDirty);
 	const [pendingTarget, setPendingTarget] = useState<Plan | null>(null);
 
@@ -33,25 +39,31 @@ export function PlanSelectionGuardProvider({ children }: { children: ReactNode }
 	const proceedPendingSelection = useCallback(() => {
 		setPendingTarget((target) => {
 			if (target) {
-				usePlansStore.getState().setPlan(target);
+				void navigate({
+					to: PLANS_TO,
+					search: target.id ? { planId: target.id } : {},
+				});
 			}
 			return null;
 		});
-	}, []);
+	}, [navigate]);
 
 	const trySelectPlan = useCallback(
 		(plan: Plan) => {
 			const current = usePlansStore.getState().plan;
-			if (current?.id === plan.id) {
+			if (current?.id === plan.id && searchPlanId === plan.id) {
 				return;
 			}
 			if (!getDirty()) {
-				usePlansStore.getState().setPlan(plan);
+				void navigate({
+					to: PLANS_TO,
+					search: plan.id ? { planId: plan.id } : {},
+				});
 				return;
 			}
 			setPendingTarget(plan);
 		},
-		[getDirty],
+		[getDirty, navigate, searchPlanId],
 	);
 
 	return (
