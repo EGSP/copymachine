@@ -27,6 +27,14 @@ export class PlanScheduler {
 					continue;
 				}
 				if (job.context.status === "idle") {
+					const jobPlan = job.context.plan as Plan | undefined;
+					if (
+						jobPlan?.versionTimestamp !== undefined
+						&& check.plan.versionTimestamp !== undefined
+						&& jobPlan.versionTimestamp === check.plan.versionTimestamp
+					) {
+						continue;
+					}
 					jobController.remove(check.plan.id);
 					console.log(`Plan ${plan.name} - (${plan.id}) is idle, removing job`);
 				}

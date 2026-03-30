@@ -4,6 +4,7 @@ import type { Schedule } from "./schedule.js";
 export type Plan = {
 	id?: string;
 	name?: string;
+	versionTimestamp?: number;
 	source?: PathInfo;
 	target?: PathInfo;
 	/** Расписание запуска плана */

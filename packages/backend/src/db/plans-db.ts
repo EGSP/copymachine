@@ -31,6 +31,24 @@ export class PlansDB {
 		};
 	}
 
+	private ensureVersion(plan: Plan): Plan {
+		if (plan.versionTimestamp !== undefined) {
+			return plan;
+		}
+
+		return {
+			...plan,
+			versionTimestamp: Date.now(),
+		};
+	}
+
+	private withUpdatedVersion(plan: Plan): Plan {
+		return {
+			...plan,
+			versionTimestamp: Date.now(),
+		};
+	}
+
 	async init() {
 		if (this.lowDb) {
 			return this.lowDb;
@@ -49,7 +67,7 @@ export class PlansDB {
 			await db.read();
 			await db.update((data) => {
 				for (let i = 0; i < data.plans.length; i += 1) {
-					data.plans[i] = this.ensurePlanId(data.plans[i]);
+					data.plans[i] = this.ensureVersion(this.ensurePlanId(data.plans[i]));
 				}
 			});
 
@@ -82,7 +100,7 @@ export class PlansDB {
 
 	async create(plan: Plan) {
 		const db = await this.getDb();
-		const planWithId = this.ensurePlanId(plan);
+		const planWithId = this.withUpdatedVersion(this.ensurePlanId(plan));
 		await db.update(({ plans }) => {
 			plans.push(planWithId);
 		});
@@ -90,7 +108,7 @@ export class PlansDB {
 
 	async update(plan: Plan) {
 		const db = await this.getDb();
-		const planWithId = this.ensurePlanId(plan);
+		const planWithId = this.withUpdatedVersion(this.ensurePlanId(plan));
 		const planIndex = db.data.plans.findIndex((item) => item.id === planWithId.id);
 		if (planIndex === -1) {
 			return;

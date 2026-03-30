@@ -33,8 +33,17 @@
         {
           "startedAt": 1774875168363,
           "status": "running"
+        },
+        {
+          "startedAt": 1774876941904,
+          "status": "error",
+          "endedAt": 1774876956916,
+          "errors": [
+            "Not implemented"
+          ]
         }
-      ]
+      ],
+      "versionTimestamp": 1774876956917
     },
     {
       "name": "Кирилллииисо",
@@ -55,7 +64,8 @@
           "startedAt": 1774870042961,
           "status": "running"
         }
-      ]
+      ],
+      "versionTimestamp": 1774876931862
     },
     {
       "name": "Poterin",
@@ -80,7 +90,8 @@
             "Not implemented"
           ]
         }
-      ]
+      ],
+      "versionTimestamp": 1774876931862
     }
   ]
 }

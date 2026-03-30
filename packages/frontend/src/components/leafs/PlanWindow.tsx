@@ -156,7 +156,7 @@ export function PlanWindow() {
 				</AlertDialogContent>
 			</AlertDialog>
 			<p className="text-sm text-(--sea-ink)">
-				План: {plan.name}, ID: {plan.id ?? "нет id"}
+				План: {plan.name}, ID: {plan.id ?? "нет id"}, Версия: {plan.versionTimestamp ?? "неизвестно"}
 			</p>
 			<ScheduleFrame
 				key={plan.id ?? "new-plan"}
