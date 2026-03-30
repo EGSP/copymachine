@@ -47,6 +47,15 @@ export class JobController {
 		return this.jobs.get(jobKey);
 	}
 
+	remove(jobKey: JobKey) {
+		const job = this.jobs.get(jobKey);
+		if (job) {
+			if (job.context.status === "running")
+				throw new Error(`Job ${jobKey} is running`);
+		}
+		this.jobs.delete(jobKey);
+	}
+
 	async tick(): Promise<void> {
 		for (const [jobKey, job] of this.jobs.entries()) {
 			if (job.promise)

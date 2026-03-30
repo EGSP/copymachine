@@ -18,22 +18,33 @@ export class PlanScheduler {
 			const job = jobController.get(check.plan.id);
 
 			if (job) {
-				continue;
-			} else {
-				jobController.add({
-					jobKey: check.plan.id,
-					jobFn: async (ctx) => {
-						await this.runPlan(ctx.plan as PlanReadyForScheduling);
-					},
-					activationFn: (ctx) => {
-						return this.shouldRun(ctx.plan as PlanReadyForScheduling);
-					},
-					fillContext: {
-						plan: { ...check.plan }
-					}
-				})
+				if (job.context.status === "running") {
+					console.log(`Plan ${plan.name} - (${plan.id}) is already running`);
+					continue;
+				}
+				if (job.context.status === "error") {
+					console.log(`Plan ${plan.name} - (${plan.id}) is in error state`);
+					continue;
+				}
+				if (job.context.status === "idle") {
+					jobController.remove(check.plan.id);
+					console.log(`Plan ${plan.name} - (${plan.id}) is idle, removing job`);
+				}
 			}
 
+			jobController.add({
+				jobKey: check.plan.id,
+				jobFn: async (ctx) => {
+					await this.runPlan(ctx.plan as PlanReadyForScheduling);
+				},
+				activationFn: (ctx) => {
+					return this.shouldRun(ctx.plan as PlanReadyForScheduling);
+				},
+				fillContext: {
+					plan: { ...check.plan }
+				}
+			})
+			console.log(`Plan ${plan.name} - (${plan.id}) added to job controller`);
 		}
 	}
 
@@ -118,13 +129,14 @@ export class PlanScheduler {
 	}
 
 	shouldRun(plan: PlanReadyForScheduling): boolean {
+		console.log(`Checking if plan ${plan.name} - (${plan.id}) should run`);
 		const schedule = plan.schedule;
 
 		// last execution by startedAt
 		const lastExecution = plan.executions?.sort((a, b) => (a.startedAt ?? 0) - (b.startedAt ?? 0))[0];
 
-		if (lastExecution) { 
-			if (lastExecution.status === "running") 
+		if (lastExecution) {
+			if (lastExecution.status === "running")
 				return false;
 
 			const checkedTag = lastExecution.tags?.includes('accepted');
@@ -134,10 +146,12 @@ export class PlanScheduler {
 
 		const now = new Date();
 		const time = schedule.time as Time;
-		
+
 		const timeDate = toCurrentDate(time);
-		if (now >= timeDate)
+		if (now >= timeDate) {
+			console.log(`Plan ${plan.name} - (${plan.id}) should run`);
 			return true;
+		}
 
 		return false;
 	}
